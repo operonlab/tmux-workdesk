@@ -4,6 +4,16 @@ All notable changes to tmux-ide are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.1] - 2026-07-12
+
+### Fixed
+
+- **Toggle heals a degenerate IDE window.** If the named window still exists
+  but has collapsed to a single pane (layout panes closed, or a build died
+  half-way), toggling used to just switch to it — looking broken forever. Now
+  a lone *idle shell* is recycled and the layout rebuilt; a lone *busy* pane
+  is left untouched with a message explaining how to rebuild.
+
 ## [0.2.0] - 2026-07-12
 
 ### Added

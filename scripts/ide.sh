@@ -111,8 +111,27 @@ ide_toggle() {
 	done < <(tmux list-windows -F '#{window_index} #{window_name}' 2>/dev/null)
 
 	if [ -n "$target" ]; then
-		tmux select-window -t ":$target" 2>/dev/null || true
-		return 0
+		# A window with our name but a single pane is a remnant (the layout
+		# panes were closed, or an earlier build died half-way). Selecting it
+		# forever would make the toggle look broken — heal instead: recycle a
+		# lone idle shell and rebuild; leave a lone BUSY pane alone and say why.
+		npanes=$(tmux display-message -p -t ":$target" '#{window_panes}' 2>/dev/null)
+		if [ "${npanes:-2}" -ge 2 ]; then
+			tmux select-window -t ":$target" 2>/dev/null || true
+			return 0
+		fi
+		lone_cmd=$(tmux list-panes -t ":$target" -F '#{pane_current_command}' 2>/dev/null | head -1)
+		case "$lone_cmd" in
+		zsh | bash | sh | -zsh | -bash | fish)
+			tmux kill-window -t ":$target" 2>/dev/null || true
+			# fall through to a fresh build below
+			;;
+		*)
+			tmux select-window -t ":$target" 2>/dev/null || true
+			msg "ide: window '$win_name' has a single busy pane ($lone_cmd) — close or empty it, then toggle again to rebuild"
+			return 0
+			;;
+		esac
 	fi
 
 	# ── resolve the root directory ──
