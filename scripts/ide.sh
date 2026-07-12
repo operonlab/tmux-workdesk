@@ -88,9 +88,9 @@ split_slot() {
 	esac
 
 	if rcmd=$(resolve_first "$cmd"); then
-		tmux split-window "${flags[@]}" -l "$size" -t "$MAIN" -c "$CWD" "$rcmd" 2>/dev/null || true
+		tmux split-window "${flags[@]}" -l "$size" -t "$MAIN" -c "$CWD" -P -F '#{pane_id}' "$rcmd" 2>/dev/null || true
 	else
-		tmux split-window "${flags[@]}" -l "$size" -t "$MAIN" -c "$CWD" 2>/dev/null || true
+		tmux split-window "${flags[@]}" -l "$size" -t "$MAIN" -c "$CWD" -P -F '#{pane_id}' 2>/dev/null || true
 		msg "ide: ${cmd%% *} not found, slot left as shell"
 	fi
 }
@@ -142,6 +142,16 @@ ide_toggle() {
 		return 0
 	}
 
+	# ── converge the fresh window to the attached client BEFORE measuring ──
+	# Under `window-size manual` (or before sizing settles) a new window can sit
+	# at the 80x24 default; computing slot cells against that ruins every
+	# proportion. Nudge it toward the client, then measure what actually stuck.
+	cw=$(num_or "$(tmux display-message -t "$MAIN" -p '#{client_width}' 2>/dev/null)" 0)
+	ch=$(num_or "$(tmux display-message -t "$MAIN" -p '#{client_height}' 2>/dev/null)" 0)
+	if [ "$cw" -ge 20 ] && [ "$ch" -ge 5 ]; then
+		tmux resize-window -t "$MAIN" -x "$cw" -y "$ch" 2>/dev/null || true
+	fi
+
 	# ── whole-window dimensions → absolute cell sizes for each slot ──
 	WW=$(num_or "$(tmux display-message -t "$MAIN" -p '#{window_width}' 2>/dev/null)" 0)
 	WH=$(num_or "$(tmux display-message -t "$MAIN" -p '#{window_height}' 2>/dev/null)" 0)
@@ -155,9 +165,24 @@ ide_toggle() {
 	# ── carve the slots off main, in order: left, right, bottom ──
 	# get_slot_cmd (not get_tmux_option): an option explicitly set to "" means
 	# "skip this slot" and must NOT fall back to the default command.
-	split_slot left "$left_cells" "$(get_slot_cmd "@ide-left-cmd" "yazi")"
-	split_slot right "$right_cells" "$(get_slot_cmd "@ide-right-cmd" "claude")"
-	split_slot bottom "$bottom_cells" "$(get_slot_cmd "@ide-bottom-cmd" "lazygit")"
+	split_slot left "$left_cells" "$(get_slot_cmd "@ide-left-cmd" "yazi")" >/dev/null
+	RIGHT=$(split_slot right "$right_cells" "$(get_slot_cmd "@ide-right-cmd" "claude")")
+	split_slot bottom "$bottom_cells" "$(get_slot_cmd "@ide-bottom-cmd" "lazygit")" >/dev/null
+
+	# ── optional second row in the right column (e.g. a file tree over an agent) ──
+	rb_cmd=$(get_slot_cmd "@ide-right-bottom-cmd" "")
+	if [ -n "$rb_cmd" ] && [ -n "${RIGHT:-}" ]; then
+		rb_pct=$(num_or "$(get_tmux_option "@ide-right-bottom-height" "50")" 50)
+		rb_cells=$((WH * rb_pct / 100))
+		if [ "$rb_cells" -ge 1 ]; then
+			if rb=$(resolve_first "$rb_cmd"); then
+				tmux split-window -v -l "$rb_cells" -t "$RIGHT" -c "$CWD" "$rb" 2>/dev/null || true
+			else
+				tmux split-window -v -l "$rb_cells" -t "$RIGHT" -c "$CWD" 2>/dev/null || true
+				msg "ide: ${rb_cmd%% *} not found, slot left as shell"
+			fi
+		fi
+	fi
 
 	# ── land focus in the main workspace ──
 	tmux select-pane -t "$MAIN" 2>/dev/null || true
