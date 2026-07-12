@@ -4,6 +4,18 @@ All notable changes to tmux-ide are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.1] - 2026-07-12
+
+### Fixed
+
+- **Slot commands now survive a minimal tmux server PATH.** Pane commands are
+  executed by the tmux server, whose PATH often lacks login-shell dirs like
+  `~/.local/bin` — a slot command living there (e.g. `claude`) passed the
+  script's own guard but died instantly in the pane. The script now harvests
+  the user's login-shell PATH once and hands `split-window` an absolute first
+  token, so the guard and the pane agree on what exists. (Found live on the
+  first real-desktop demo; the isolated test env masked it.)
+
 ## [0.1.0] - 2026-07-12
 
 Initial release.

@@ -39,6 +39,14 @@ CURRENT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=scripts/helpers.sh
 . "${CURRENT_DIR}/helpers.sh"
 
+# tmux bindings run this script with the SERVER's environment, whose PATH is
+# often minimal (login-shell-managed dirs like ~/.local/bin are absent there).
+# Harvest the user's login PATH once so the command guards below see what the
+# user sees in a normal terminal.
+user_path="$("${SHELL:-/bin/sh}" -lc 'printf %s "$PATH"' 2>/dev/null || true)"
+[ -n "$user_path" ] && PATH="$user_path:$PATH"
+export PATH
+
 # num_or <value> <default> — strip to digits, fall back to default when empty.
 # Guards the arithmetic below against a stray "20%" or a typo in a user option.
 num_or() {
@@ -46,10 +54,15 @@ num_or() {
 	printf '%s' "${v:-$2}"
 }
 
-# have_first <command-line> — true if the first token resolves on PATH.
-have_first() {
+# resolve_first <command-line> — print the command line with its first token
+# replaced by an absolute path, failing when it doesn't resolve. The pane
+# command is executed by the tmux server (NOT this script), whose PATH may be
+# minimal — an absolute first token works in any environment.
+resolve_first() {
 	first="${1%% *}"
-	command -v "$first" >/dev/null 2>&1
+	rest="${1#"$first"}"
+	abs=$(command -v "$first" 2>/dev/null) || return 1
+	printf '%s%s' "$abs" "$rest"
 }
 
 msg() {
@@ -74,8 +87,8 @@ split_slot() {
 	*) return 0 ;;
 	esac
 
-	if have_first "$cmd"; then
-		tmux split-window "${flags[@]}" -l "$size" -t "$MAIN" -c "$CWD" "$cmd" 2>/dev/null || true
+	if rcmd=$(resolve_first "$cmd"); then
+		tmux split-window "${flags[@]}" -l "$size" -t "$MAIN" -c "$CWD" "$rcmd" 2>/dev/null || true
 	else
 		tmux split-window "${flags[@]}" -l "$size" -t "$MAIN" -c "$CWD" 2>/dev/null || true
 		msg "ide: ${cmd%% *} not found, slot left as shell"
@@ -111,9 +124,13 @@ ide_toggle() {
 
 	# ── main pane (the window's first pane), with a command guard ──
 	main_cmd=$(get_slot_cmd "@ide-main-cmd" "")
-	if [ -n "$main_cmd" ] && ! have_first "$main_cmd"; then
-		msg "ide: ${main_cmd%% *} not found, slot left as shell"
-		main_cmd=""
+	if [ -n "$main_cmd" ]; then
+		if rmain=$(resolve_first "$main_cmd"); then
+			main_cmd="$rmain"
+		else
+			msg "ide: ${main_cmd%% *} not found, slot left as shell"
+			main_cmd=""
+		fi
 	fi
 	if [ -n "$main_cmd" ]; then
 		MAIN=$(tmux new-window -n "$win_name" -c "$CWD" -P -F '#{pane_id}' "$main_cmd" 2>/dev/null || true)
