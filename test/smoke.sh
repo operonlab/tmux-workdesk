@@ -6,10 +6,11 @@
 # `run-shell`, so the bare `tmux` calls inside them inherit the same private
 # socket through $TMUX — no PATH shim needed here.
 #
-# The slot programs (yazi / claude / lazygit) are almost never installed on a
-# CI runner; that is fine and intentional — ide.sh's command guard then opens a
-# plain shell in each slot, so the PANE is still created and the geometry is
-# identical. These tests assert layout structure, not that the tools launched.
+# These tests assert layout structure, not that the tools launched — so every
+# scenario pins the slot commands to a plain `sh` (see inert_slots). On a dev
+# machine the real defaults (yazi / claude / lazygit) ARE installed, and a
+# leaked or slow slot pane becomes a live AI agent that pollutes the host's
+# agent observability; smoke runs must never start one.
 
 set -u
 
@@ -24,17 +25,30 @@ TMPDIRS=""
 cleanup() {
 	for s in $SOCKETS; do
 		tmux -L "$s" kill-server 2>/dev/null || true
+		rm -f "${TMUX_TMPDIR:-/tmp}/tmux-$(id -u)/$s" 2>/dev/null || true
 	done
 	for d in $TMPDIRS; do
 		[ -n "$d" ] && rm -rf "$d" 2>/dev/null || true
 	done
 }
-trap cleanup EXIT
+trap cleanup EXIT INT TERM
 
+# new_sock <letter> — allocate a socket name into $SOCK and register it for
+# cleanup. Must be called plainly, never as `$(new_sock …)`: command
+# substitution runs the body in a subshell, the SOCKETS registration dies
+# there, and cleanup silently becomes a no-op that leaks every test server.
 new_sock() {
-	s="idetest$$_$1"
-	SOCKETS="$SOCKETS $s"
-	printf '%s' "$s"
+	SOCK="idetest$$_$1"
+	SOCKETS="$SOCKETS $SOCK"
+}
+
+# inert_slots <sock> — pin all slot commands to a plain shell so a smoke run
+# never launches the real tools (claude would register as a live agent on the
+# host). Scenarios that probe a specific slot option override it afterwards.
+inert_slots() {
+	tmux -L "$1" set-option -g @ide-left-cmd "sh"
+	tmux -L "$1" set-option -g @ide-right-cmd "sh"
+	tmux -L "$1" set-option -g @ide-bottom-cmd "sh"
 }
 
 check() {
@@ -56,8 +70,9 @@ echo "tmux version: $(tmux -V)"
 
 # ═════════════════ Scenario A: default four slots → 4 panes, exact geometry ═════════════════
 echo "── Scenario A: default four-slot layout (200x50 window)"
-A=$(new_sock A)
+new_sock A; A=$SOCK
 tmux -L "$A" -f /dev/null new-session -d -s work -x 200 -y 50
+inert_slots "$A"
 tmux -L "$A" run-shell "'${IDE}' toggle"
 sleep 0.3
 count=$(panes_of "$A" work:ide | grep -c .)
@@ -91,8 +106,9 @@ check "focus on main pane — top row" "0" "$active_top"
 
 # ═════════════════ Scenario B: @ide-right-cmd empty → slot skipped, 3 panes ═════════════════
 echo "── Scenario B: empty @ide-right-cmd → agent slot skipped (3 panes)"
-B=$(new_sock B)
+new_sock B; B=$SOCK
 tmux -L "$B" -f /dev/null new-session -d -s work -x 200 -y 50
+inert_slots "$B"
 tmux -L "$B" set-option -g @ide-right-cmd ""
 tmux -L "$B" run-shell "'${IDE}' toggle"
 sleep 0.3
@@ -103,8 +119,9 @@ check "no agent gap — layout reaches window right edge" "199" "$right_edge"
 
 # ═════════════════ Scenario C: missing program → fallback shell, pane still built ═════════════════
 echo "── Scenario C: missing slot program → pane opens as a shell (still 4 panes)"
-C=$(new_sock C)
+new_sock C; C=$SOCK
 tmux -L "$C" -f /dev/null new-session -d -s work -x 200 -y 50
+inert_slots "$C"
 tmux -L "$C" set-option -g @ide-left-cmd "nonexistent-cmd-xyz123"
 tmux -L "$C" run-shell "'${IDE}' toggle"
 sleep 0.3
@@ -115,8 +132,9 @@ check "left slot is not the bogus command" "yes" "$([ "$left_cmd" != "nonexisten
 
 # ═════════════════ Scenario D: toggle twice → no rebuild, switch back to existing ═════════════════
 echo "── Scenario D: second toggle selects the existing window (no rebuild)"
-D=$(new_sock D)
+new_sock D; D=$SOCK
 tmux -L "$D" -f /dev/null new-session -d -s work -x 200 -y 50
+inert_slots "$D"
 tmux -L "$D" run-shell "'${IDE}' toggle"
 sleep 0.3
 first_panes=$(panes_of "$D" work:ide | grep -c .)
@@ -133,7 +151,7 @@ check "2nd toggle switched focus back to the ide window" "ide" "$active_win"
 
 # ═════════════════ Scenario E: @ide-cwd with a space is passed through safely ═════════════════
 echo "── Scenario E: cwd containing a space is honored for every slot"
-E=$(new_sock E)
+new_sock E; E=$SOCK
 SPACEBASE="${TMPDIR:-/tmp}/ide smoke $$"
 mkdir -p "$SPACEBASE"
 # Canonicalize (resolve symlinks like macOS /var → /private/var, drop any
@@ -142,6 +160,7 @@ mkdir -p "$SPACEBASE"
 SPACEBASE=$(cd "$SPACEBASE" && pwd -P)
 TMPDIRS="$TMPDIRS $SPACEBASE"
 tmux -L "$E" -f /dev/null new-session -d -s work -x 200 -y 50
+inert_slots "$E"
 tmux -L "$E" set-option -g @ide-cwd "$SPACEBASE"
 tmux -L "$E" run-shell "'${IDE}' toggle"
 sleep 0.3
@@ -153,8 +172,9 @@ check "left slot cwd (with space) is correct" "$SPACEBASE" "$yazi_path"
 
 # ═════════════════ Scenario F: entrypoint binds the key, teardown removes it + the window ═════════════════
 echo "── Scenario F: ide.tmux installs the bind; teardown.sh unbinds + kills the window"
-F=$(new_sock F)
+new_sock F; F=$SOCK
 tmux -L "$F" -f /dev/null new-session -d -s work -x 200 -y 50
+inert_slots "$F"
 tmux -L "$F" run-shell "'${REPO_DIR}/ide.tmux'"
 sleep 0.2
 bound=$(tmux -L "$F" list-keys -T prefix 2>/dev/null | grep -c 'ide.sh.*toggle')
