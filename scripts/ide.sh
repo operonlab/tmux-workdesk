@@ -142,6 +142,11 @@ ide_toggle() {
 		return 0
 	}
 
+	# Mark the window as plugin-managed. External automation (auto-layout /
+	# rebalance hooks) can check this window option and leave our carefully
+	# proportioned panes alone.
+	tmux set-option -w -t "$MAIN" @ide-window 1 2>/dev/null || true
+
 	# ── converge the fresh window to the attached client BEFORE measuring ──
 	# Under `window-size manual` (or before sizing settles) a new window can sit
 	# at the 80x24 default; computing slot cells against that ruins every

@@ -4,6 +4,25 @@ All notable changes to tmux-ide are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] - 2026-07-12
+
+### Added
+
+- **Right-column split** (`@ide-right-bottom-cmd` / `@ide-right-bottom-height`):
+  stack a second command under the right slot — e.g. a file tree above an
+  agent CLI.
+- **`@ide-window 1` window marker** on every window the plugin builds, so
+  external auto-layout/rebalance automation can recognise and skip them.
+  (Found live: a user rebalance hook running `select-layout -E` flattened the
+  plugin's 60/40 stack seconds after the build.)
+
+### Fixed
+
+- **Proportions under `window-size manual`**: a fresh window can sit at the
+  80x24 default when created; the plugin now converges it to the attached
+  client's size *before* computing slot cells, instead of carving percentages
+  out of 80x24.
+
 ## [0.1.1] - 2026-07-12
 
 ### Fixed

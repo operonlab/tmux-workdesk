@@ -131,6 +131,24 @@ line. All are optional.
 | `@ide-left-width` | `20` | Left slot width, as a **percent of the window**. |
 | `@ide-right-width` | `30` | Right slot width, as a **percent of the window**. |
 | `@ide-bottom-height` | `30` | Git-panel height, as a **percent of the window** (of the central column, which is full window height). |
+| `@ide-right-bottom-cmd` | *(empty)* | Optional second command stacked **under** the right slot (e.g. a file tree above, an agent below). Empty = the right column stays one pane. |
+| `@ide-right-bottom-height` | `50` | Height of that second right-column pane, as a **percent of the window**. |
+
+Every window this plugin builds carries the window option `@ide-window 1`.
+If you run your own auto-layout or rebalance hooks, check that option and skip
+re-laying-out these windows — their pane proportions are deliberate.
+
+Example — git panel on the left, files stacked over an agent on the right
+(three panes; the *main* slot becomes the top-right pane):
+
+```tmux
+set -g @ide-left-cmd 'lazygit'
+set -g @ide-left-width '33'
+set -g @ide-main-cmd 'yazi'
+set -g @ide-bottom-cmd 'claude'
+set -g @ide-bottom-height '40'
+set -g @ide-right-cmd ''
+```
 
 Example — put nvim in the main pane, use a different agent, widen the sidebar,
 and move the key to `g`:

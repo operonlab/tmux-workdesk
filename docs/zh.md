@@ -112,6 +112,23 @@ tmux source ~/.tmux.conf
 | `@ide-left-width` | `20` | 左格寬度，佔**整個視窗**的百分比。 |
 | `@ide-right-width` | `30` | 右格寬度，佔**整個視窗**的百分比。 |
 | `@ide-bottom-height` | `30` | git 面板高度，佔**整個視窗**的百分比（即中欄高度，中欄本身是視窗全高）。 |
+| `@ide-right-bottom-cmd` | *(空)* | 右欄的第二個指令，疊在右格**下方**（例如上面檔案樹、下面 agent）。留空＝右欄維持一格。 |
+| `@ide-right-bottom-height` | `50` | 右欄第二格的高度，佔**整個視窗**的百分比。 |
+
+本外掛建立的視窗都帶著 window option `@ide-window 1`。如果你有自己的
+自動排版／rebalance hook，請檢查這個標記並跳過這些視窗——它們的
+pane 比例是刻意排的。
+
+範例——左邊整條 git 面板、右邊上檔案樹下 agent（三格；*main* 槽就是右上那格）：
+
+```tmux
+set -g @ide-left-cmd 'lazygit'
+set -g @ide-left-width '33'
+set -g @ide-main-cmd 'yazi'
+set -g @ide-bottom-cmd 'claude'
+set -g @ide-bottom-height '40'
+set -g @ide-right-cmd ''
+```
 
 範例——主 pane 放 nvim、換另一個 agent、加寬側欄、把鍵改到 `g`：
 
