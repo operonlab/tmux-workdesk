@@ -1,0 +1,40 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  shellcheck:
+    name: shellcheck (-S warning)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install shellcheck
+        run: sudo apt-get update && sudo apt-get install -y shellcheck
+      - name: Lint all shell files
+        run: |
+          shellcheck -S warning \
+            ide.tmux \
+            scripts/ide.sh \
+            scripts/helpers.sh \
+            scripts/teardown.sh \
+            test/smoke.sh
+
+  smoke:
+    name: functional smoke (tmux, isolated socket)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install tmux
+        run: sudo apt-get update && sudo apt-get install -y tmux
+      - name: Show tmux version
+        run: tmux -V
+      # The layout engine is pure tmux (split-window with absolute cell sizes)
+      # and behaves identically on Linux and macOS, so the full smoke suite runs
+      # here. The only macOS-specific concern is bash 3.2 syntax compatibility
+      # (macOS ships bash 3.2); that is enforced statically by the shellcheck
+      # job above, since GitHub's Linux runners ship bash 5.
+      - name: Run smoke suite
+        run: bash test/smoke.sh

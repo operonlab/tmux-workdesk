@@ -1,0 +1,8 @@
+# Editor / OS cruft
+.DS_Store
+*.swp
+*~
+
+# tmux-ide keeps no runtime state on disk — the layout lives entirely in the
+# running tmux server (windows and panes), so there is nothing under
+# ${TMUX_TMPDIR:-/tmp}/ or here to ignore.
