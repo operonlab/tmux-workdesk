@@ -133,10 +133,10 @@ line. All are optional.
 | `@ide-bottom-height` | `30` | Git-panel height, as a **percent of the window** (of the central column, which is full window height). |
 
 Example — put nvim in the main pane, use a different agent, widen the sidebar,
-and move the key to `e`:
+and move the key to `g`:
 
 ```tmux
-set -g @ide-bind 'e'
+set -g @ide-bind 'g'
 set -g @ide-main-cmd 'nvim'
 set -g @ide-right-cmd 'codex'
 set -g @ide-left-width '25'
@@ -208,6 +208,35 @@ just press `prefix + i` again to rebuild.
   workspace. The recipe (yazi opener config + a `tmux send-keys` bridge) is
   written up in [docs/yazi-integration.md](docs/yazi-integration.md); it is
   **not bundled in v0.1**.
+
+## Relation to other `tmux-ide` plugins
+
+`tmux-ide` is a name several unrelated projects picked independently — most
+notably [guysoft/tmux-ide](https://github.com/guysoft/tmux-ide) (a 3-pane
+`nvim + opencode` layout that exposes the nvim RPC socket for agent-driven
+debugging), plus [wavyrai/tmux-ide](https://github.com/wavyrai/tmux-ide) and
+[sandeeprenjith/TMUX-IDE](https://github.com/sandeeprenjith/TMUX-IDE).
+
+**This repo is not affiliated with any of them.** The name is kept on purpose:
+it plainly says what the plugin does, and installs are namespaced
+(`set -g @plugin 'joneshong-skills/tmux-ide'`), so you always fetch *this* one,
+never another author's.
+
+How this one differs from guysoft/tmux-ide, the closest sibling:
+
+- **Four slots, not three** — a full-height file manager (yazi) on the left and
+  a first-class git panel (lazygit) below the main pane, versus guysoft's
+  editor + agent + terminal.
+- **Editor-agnostic** — the main pane defaults to a plain shell (point
+  `@ide-main-cmd` at any editor you like); there is no nvim coupling and no RPC
+  socket.
+- **Different defaults** — yazi / claude / lazygit here, versus nvim / opencode
+  there.
+- **tmux 2.4 floor** — sizes are converted to absolute cells, so the layout is
+  exact regardless of split order and needs no modern percentage syntax.
+
+Heads-up: both plugins read the `@ide-*` option prefix, so don't enable both at
+once — pick one.
 
 ## Credits / License
 

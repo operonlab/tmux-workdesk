@@ -113,10 +113,10 @@ tmux source ~/.tmux.conf
 | `@ide-right-width` | `30` | 右格寬度，佔**整個視窗**的百分比。 |
 | `@ide-bottom-height` | `30` | git 面板高度，佔**整個視窗**的百分比（即中欄高度，中欄本身是視窗全高）。 |
 
-範例——主 pane 放 nvim、換另一個 agent、加寬側欄、把鍵改到 `e`：
+範例——主 pane 放 nvim、換另一個 agent、加寬側欄、把鍵改到 `g`：
 
 ```tmux
-set -g @ide-bind 'e'
+set -g @ide-bind 'g'
 set -g @ide-main-cmd 'nvim'
 set -g @ide-right-cmd 'codex'
 set -g @ide-left-width '25'
@@ -182,6 +182,30 @@ tmux 每條 pane 邊界會吃掉一格，所以 200 欄視窗的 20% / ~50% / 30
 - **yazi → 主 pane**：把 yazi 選中的檔案直接開進主工作區。做法（yazi opener 設定
   ＋ 一段 `tmux send-keys` 橋接）寫在
   [docs/yazi-integration.md](yazi-integration.md)；**v0.1 不內建**。
+
+## 與其他 `tmux-ide` 外掛的關係
+
+`tmux-ide` 這個名字有好幾個彼此無關的專案各自取用——其中最接近的是
+[guysoft/tmux-ide](https://github.com/guysoft/tmux-ide)（`nvim + opencode` 的
+三格佈局，並把 nvim 的 RPC socket 暴露出來給 agent 做除錯），另外還有
+[wavyrai/tmux-ide](https://github.com/wavyrai/tmux-ide) 與
+[sandeeprenjith/TMUX-IDE](https://github.com/sandeeprenjith/TMUX-IDE)。
+
+**本 repo 與上述任何一個都沒有關聯。** 之所以沿用這個名字是刻意的：它直白地說明了
+外掛在做什麼；而且安裝走命名空間（`set -g @plugin 'joneshong-skills/tmux-ide'`），
+所以你抓到的永遠是**這一個**，不會抓成別人的。
+
+與最接近的 guysoft/tmux-ide 的差異：
+
+- **四格，而非三格**——左側多一個全高的檔案管理器（yazi），主 pane 下方多一個
+  獨立的 git 面板（lazygit），對比 guysoft 的 editor + agent + terminal。
+- **不綁編輯器**——主 pane 預設純 shell（要用編輯器就把 `@ide-main-cmd` 指過去）；
+  沒有 nvim 耦合，也沒有 RPC socket。
+- **預設不同**——這裡是 yazi / claude / lazygit，那邊是 nvim / opencode。
+- **tmux 2.4 起跳**——尺寸換算成絕對格數，佈局不受 split 順序影響，也不需要新版
+  的百分比語法。
+
+提醒：兩個外掛都讀 `@ide-*` 選項前綴，所以別同時啟用——擇一即可。
 
 ## 致謝 / 授權
 
