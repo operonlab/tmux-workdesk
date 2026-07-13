@@ -1,52 +1,58 @@
-# tmux-workdesk demo — turn the current project into an IDE-style tmux window
-# (files | shell/git | agent) with a single keypress, then toggle back and forth.
-#
-# Recorded against an isolated tmux server (socket: vhsdemo-workdesk,
-# -f /dev/null), never the user's live server. The AI slot is a harmless
-# stand-in — no real agent CLI is ever launched.
-Output docs/demo.gif
+# tmux-workdesk demo — one keypress turns the current project into a four-slot
+# IDE window; pressing it again from anywhere jumps back without rebuilding.
+# Fully self-contained: docs/demo-setup.sh stages an anonymous sample project,
+# a cockpit-style themed ISOLATED tmux server (socket wd-demo), and a harmless
+# AI-slot stand-in. Re-record from the repo root with:  vhs docs/demo.tape
+Output "docs/demo.gif"
 Require tmux
 
 Set Shell "bash"
-Set Width 1200
-Set Height 700
-Set FontSize 14
-Set Padding 12
-Set TypingSpeed 55ms
+Set FontFamily "MesloLGS Nerd Font Mono"
+Set FontSize 20
+Set Width 1600
+Set Height 900
+Set Padding 20
+Set TypingSpeed 35ms
 
-# ---- hidden setup: isolated server + slot options + plugin load ----
 Hide
-Type "bash /private/tmp/claude-501/-Users-joneshong/aaff1254-ec36-4c2f-98bf-76d62cc8b483/scratchpad/vhs-visual/setup-workdesk.sh"
+Type "bash docs/demo-setup.sh"
 Enter
-Sleep 1s
-Type "clear; tmux -L vhsdemo-workdesk attach -t demo"
+Sleep 3s
+Type "clear; tmux -L wd-demo attach -t demo"
 Enter
 Sleep 1500ms
 Show
 
-# ---- visible demo ----
-Sleep 1500ms
+# the cockpit: double status row + clean prompt, sitting in a project dir
+Sleep 1200ms
 
-# one keypress builds the four-slot IDE window (yazi · shell/lazygit · agent)
-Ctrl+B
-Sleep 500ms
-Type "i"
-Sleep 6s
-
-# leave the IDE window...
+# one keypress -> the four-slot IDE window
 Ctrl+B
 Sleep 400ms
-Type "0"
-Sleep 1800ms
-
-# ...press the same key again and it jumps straight back — never rebuilds
-Ctrl+B
-Sleep 500ms
 Type "i"
-Sleep 3s
+Sleep 5500ms
 
-# ---- hidden teardown ----
+# jump away ... and back: the toggle never rebuilds
+Ctrl+B
+Sleep 300ms
+Type "0"
+Sleep 800ms
+Type "# press  prefix + i  again from anywhere -> jumps back, never rebuilds"
+Sleep 1600ms
+Ctrl+B
+Sleep 300ms
+Type "i"
+Sleep 2200ms
+
+# settle in the main workspace and hold the money shot
+Type "bat --style=numbers,header src/app.py"
+Enter
+Sleep 4s
+
 Hide
-Type "tmux -L vhsdemo-workdesk kill-server"
+Ctrl+B
+Type "d"
+Sleep 500ms
+Type "tmux -L wd-demo kill-server"
 Enter
 Sleep 500ms
