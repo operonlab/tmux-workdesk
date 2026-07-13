@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
-# ide.sh — build (or switch back to) a one-window IDE layout for the current
+# workdesk.sh — build (or switch back to) a one-window IDE layout for the current
 #          project, on a single keypress.
 #
-# Usage:  ide.sh toggle
+# Usage:  workdesk.sh toggle
 #
 # Toggle behavior:
-#   * A window named @ide-window-name (default "ide") already exists in the
+#   * A window named @workdesk-window-name (default "ide") already exists in the
 #     current session  ->  just select-window to it (no rebuild).
-#   * It does not exist  ->  build the layout rooted at @ide-cwd (default: the
+#   * It does not exist  ->  build the layout rooted at @workdesk-cwd (default: the
 #     triggering pane's current path).
 #
 # Layout (default four slots):
@@ -20,7 +20,7 @@
 #   +--------+---------------------+----------+
 #      20%           ~50%              30%
 #
-# Each slot's command and size is a @ide-* option (see README). A slot whose
+# Each slot's command and size is a @workdesk-* option (see README). A slot whose
 # option is set empty is skipped — the neighbouring pane keeps that space.
 #
 # Sizing note: the width/height options are percentages OF THE WHOLE WINDOW.
@@ -91,12 +91,12 @@ split_slot() {
 		tmux split-window "${flags[@]}" -l "$size" -t "$MAIN" -c "$CWD" -P -F '#{pane_id}' "$rcmd" 2>/dev/null || true
 	else
 		tmux split-window "${flags[@]}" -l "$size" -t "$MAIN" -c "$CWD" -P -F '#{pane_id}' 2>/dev/null || true
-		msg "ide: ${cmd%% *} not found, slot left as shell"
+		msg "workdesk: ${cmd%% *} not found, slot left as shell"
 	fi
 }
 
-ide_toggle() {
-	win_name=$(get_tmux_option "@ide-window-name" "ide")
+workdesk_toggle() {
+	win_name=$(get_tmux_option "@workdesk-window-name" "ide")
 
 	# ── already built? just switch to it ──
 	target=""
@@ -128,26 +128,26 @@ ide_toggle() {
 			;;
 		*)
 			tmux select-window -t ":$target" 2>/dev/null || true
-			msg "ide: window '$win_name' has a single busy pane ($lone_cmd) — close or empty it, then toggle again to rebuild"
+			msg "workdesk: window '$win_name' has a single busy pane ($lone_cmd) — close or empty it, then toggle again to rebuild"
 			return 0
 			;;
 		esac
 	fi
 
 	# ── resolve the root directory ──
-	CWD=$(get_tmux_option "@ide-cwd" "")
+	CWD=$(get_tmux_option "@workdesk-cwd" "")
 	if [ -z "$CWD" ]; then
 		CWD=$(tmux display-message -p '#{pane_current_path}' 2>/dev/null)
 	fi
 	[ -z "$CWD" ] && CWD="$HOME"
 
 	# ── main pane (the window's first pane), with a command guard ──
-	main_cmd=$(get_slot_cmd "@ide-main-cmd" "")
+	main_cmd=$(get_slot_cmd "@workdesk-main-cmd" "")
 	if [ -n "$main_cmd" ]; then
 		if rmain=$(resolve_first "$main_cmd"); then
 			main_cmd="$rmain"
 		else
-			msg "ide: ${main_cmd%% *} not found, slot left as shell"
+			msg "workdesk: ${main_cmd%% *} not found, slot left as shell"
 			main_cmd=""
 		fi
 	fi
@@ -157,14 +157,14 @@ ide_toggle() {
 		MAIN=$(tmux new-window -n "$win_name" -c "$CWD" -P -F '#{pane_id}' 2>/dev/null || true)
 	fi
 	[ -z "$MAIN" ] && {
-		msg "ide: could not create the '$win_name' window"
+		msg "workdesk: could not create the '$win_name' window"
 		return 0
 	}
 
 	# Mark the window as plugin-managed. External automation (auto-layout /
 	# rebalance hooks) can check this window option and leave our carefully
 	# proportioned panes alone.
-	tmux set-option -w -t "$MAIN" @ide-window 1 2>/dev/null || true
+	tmux set-option -w -t "$MAIN" @workdesk-window 1 2>/dev/null || true
 
 	# ── converge the fresh window to the attached client BEFORE measuring ──
 	# Under `window-size manual` (or before sizing settles) a new window can sit
@@ -179,9 +179,9 @@ ide_toggle() {
 	# ── whole-window dimensions → absolute cell sizes for each slot ──
 	WW=$(num_or "$(tmux display-message -t "$MAIN" -p '#{window_width}' 2>/dev/null)" 0)
 	WH=$(num_or "$(tmux display-message -t "$MAIN" -p '#{window_height}' 2>/dev/null)" 0)
-	left_pct=$(num_or "$(get_tmux_option "@ide-left-width" "20")" 20)
-	right_pct=$(num_or "$(get_tmux_option "@ide-right-width" "30")" 30)
-	bottom_pct=$(num_or "$(get_tmux_option "@ide-bottom-height" "30")" 30)
+	left_pct=$(num_or "$(get_tmux_option "@workdesk-left-width" "20")" 20)
+	right_pct=$(num_or "$(get_tmux_option "@workdesk-right-width" "30")" 30)
+	bottom_pct=$(num_or "$(get_tmux_option "@workdesk-bottom-height" "30")" 30)
 	left_cells=$((WW * left_pct / 100))
 	right_cells=$((WW * right_pct / 100))
 	bottom_cells=$((WH * bottom_pct / 100))
@@ -189,21 +189,21 @@ ide_toggle() {
 	# ── carve the slots off main, in order: left, right, bottom ──
 	# get_slot_cmd (not get_tmux_option): an option explicitly set to "" means
 	# "skip this slot" and must NOT fall back to the default command.
-	split_slot left "$left_cells" "$(get_slot_cmd "@ide-left-cmd" "yazi")" >/dev/null
-	RIGHT=$(split_slot right "$right_cells" "$(get_slot_cmd "@ide-right-cmd" "claude")")
-	split_slot bottom "$bottom_cells" "$(get_slot_cmd "@ide-bottom-cmd" "lazygit")" >/dev/null
+	split_slot left "$left_cells" "$(get_slot_cmd "@workdesk-left-cmd" "yazi")" >/dev/null
+	RIGHT=$(split_slot right "$right_cells" "$(get_slot_cmd "@workdesk-right-cmd" "claude")")
+	split_slot bottom "$bottom_cells" "$(get_slot_cmd "@workdesk-bottom-cmd" "lazygit")" >/dev/null
 
 	# ── optional second row in the right column (e.g. a file tree over an agent) ──
-	rb_cmd=$(get_slot_cmd "@ide-right-bottom-cmd" "")
+	rb_cmd=$(get_slot_cmd "@workdesk-right-bottom-cmd" "")
 	if [ -n "$rb_cmd" ] && [ -n "${RIGHT:-}" ]; then
-		rb_pct=$(num_or "$(get_tmux_option "@ide-right-bottom-height" "50")" 50)
+		rb_pct=$(num_or "$(get_tmux_option "@workdesk-right-bottom-height" "50")" 50)
 		rb_cells=$((WH * rb_pct / 100))
 		if [ "$rb_cells" -ge 1 ]; then
 			if rb=$(resolve_first "$rb_cmd"); then
 				tmux split-window -v -l "$rb_cells" -t "$RIGHT" -c "$CWD" "$rb" 2>/dev/null || true
 			else
 				tmux split-window -v -l "$rb_cells" -t "$RIGHT" -c "$CWD" 2>/dev/null || true
-				msg "ide: ${rb_cmd%% *} not found, slot left as shell"
+				msg "workdesk: ${rb_cmd%% *} not found, slot left as shell"
 			fi
 		fi
 	fi
@@ -213,9 +213,9 @@ ide_toggle() {
 }
 
 case "${1:-toggle}" in
-toggle) ide_toggle ;;
+toggle) workdesk_toggle ;;
 *)
-	echo "usage: ide.sh {toggle}" >&2
+	echo "usage: workdesk.sh {toggle}" >&2
 	exit 1
 	;;
 esac

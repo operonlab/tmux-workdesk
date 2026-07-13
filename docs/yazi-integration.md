@@ -2,7 +2,7 @@
 
 **Status: roadmap — not bundled in v0.1.**
 
-Out of the box, tmux-ide runs [yazi](https://github.com/sxyazi/yazi) in the left
+Out of the box, tmux-workdesk runs [yazi](https://github.com/sxyazi/yazi) in the left
 slot as a normal file manager: pressing Enter opens the highlighted file with
 yazi's own opener (usually `$EDITOR` *inside the yazi pane*). What most people
 actually want from an IDE layout is different: highlight a file on the left, and
@@ -10,7 +10,7 @@ have it open in the **main workspace pane** in the centre.
 
 yazi can't move focus across tmux panes by itself, but it can run a shell
 command — and that command can be `tmux send-keys` aimed at the main pane. This
-page is the recipe. It's documentation-only for now; a future tmux-ide version
+page is the recipe. It's documentation-only for now; a future tmux-workdesk version
 may wire the pane target up automatically (see "The missing piece" below).
 
 ## The idea
@@ -52,7 +52,7 @@ the main pane instead of opening it locally.
 ```toml
 [[manager.prepend_keymap]]
 on   = "<Enter>"
-desc = "Open the hovered file in the tmux-ide main pane"
+desc = "Open the hovered file in the tmux-workdesk main pane"
 run  = '''
   shell 'main=$(tmux list-panes -t ide -F "#{pane_id} #{pane_title}" | awk "\$2==\"ide-main\"{print \$1; exit}"); [ -n "$main" ] && tmux send-keys -t "$main" "${EDITOR:-nvim} \"$0\"" Enter' --confirm
 '''
@@ -80,7 +80,7 @@ hand today. A clean built-in version would instead **pass the main pane id into
 the yazi slot's environment** at build time, e.g.:
 
 ```sh
-# what a future ide.sh could do when it splits the left slot:
+# what a future workdesk.sh could do when it splits the left slot:
 tmux split-window -h -b -l "$yazi_cells" -t "$MAIN" \
      -e "IDE_MAIN_PANE=$MAIN" -c "$CWD" yazi
 ```

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# smoke.sh — headless functional test for tmux-ide on an isolated tmux socket.
+# smoke.sh — headless functional test for tmux-workdesk on an isolated tmux socket.
 #
 # Never touches the default tmux server: every command runs under `tmux -L`
 # with a private socket that is killed on exit. Scripts are invoked via
@@ -16,7 +16,7 @@ set -u
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
-IDE="${REPO_DIR}/scripts/ide.sh"
+IDE="${REPO_DIR}/scripts/workdesk.sh"
 
 SOCKETS=""
 FAILS=0
@@ -46,9 +46,9 @@ new_sock() {
 # never launches the real tools (claude would register as a live agent on the
 # host). Scenarios that probe a specific slot option override it afterwards.
 inert_slots() {
-	tmux -L "$1" set-option -g @ide-left-cmd "sh"
-	tmux -L "$1" set-option -g @ide-right-cmd "sh"
-	tmux -L "$1" set-option -g @ide-bottom-cmd "sh"
+	tmux -L "$1" set-option -g @workdesk-left-cmd "sh"
+	tmux -L "$1" set-option -g @workdesk-right-cmd "sh"
+	tmux -L "$1" set-option -g @workdesk-bottom-cmd "sh"
 }
 
 check() {
@@ -104,12 +104,12 @@ active_top=$(printf '%s\n' "$geom" | awk '$5==1{print $2; exit}')
 check "focus on main pane — left offset" "41" "$active_left"
 check "focus on main pane — top row" "0" "$active_top"
 
-# ═════════════════ Scenario B: @ide-right-cmd empty → slot skipped, 3 panes ═════════════════
-echo "── Scenario B: empty @ide-right-cmd → agent slot skipped (3 panes)"
+# ═════════════════ Scenario B: @workdesk-right-cmd empty → slot skipped, 3 panes ═════════════════
+echo "── Scenario B: empty @workdesk-right-cmd → agent slot skipped (3 panes)"
 new_sock B; B=$SOCK
 tmux -L "$B" -f /dev/null new-session -d -s work -x 200 -y 50
 inert_slots "$B"
-tmux -L "$B" set-option -g @ide-right-cmd ""
+tmux -L "$B" set-option -g @workdesk-right-cmd ""
 tmux -L "$B" run-shell "'${IDE}' toggle"
 sleep 0.3
 check "pane count with agent slot empty" "3" "$(panes_of "$B" work:ide | grep -c .)"
@@ -122,7 +122,7 @@ echo "── Scenario C: missing slot program → pane opens as a shell (still 4
 new_sock C; C=$SOCK
 tmux -L "$C" -f /dev/null new-session -d -s work -x 200 -y 50
 inert_slots "$C"
-tmux -L "$C" set-option -g @ide-left-cmd "nonexistent-cmd-xyz123"
+tmux -L "$C" set-option -g @workdesk-left-cmd "nonexistent-cmd-xyz123"
 tmux -L "$C" run-shell "'${IDE}' toggle"
 sleep 0.3
 check "missing-program slot still built (4 panes)" "4" "$(panes_of "$C" work:ide | grep -c .)"
@@ -149,7 +149,7 @@ check "pane count unchanged after 2nd toggle" "$first_panes" "$(panes_of "$D" wo
 active_win=$(tmux -L "$D" display-message -t work -p '#{window_name}')
 check "2nd toggle switched focus back to the ide window" "ide" "$active_win"
 
-# ═════════════════ Scenario E: @ide-cwd with a space is passed through safely ═════════════════
+# ═════════════════ Scenario E: @workdesk-cwd with a space is passed through safely ═════════════════
 echo "── Scenario E: cwd containing a space is honored for every slot"
 new_sock E; E=$SOCK
 SPACEBASE="${TMPDIR:-/tmp}/ide smoke $$"
@@ -161,7 +161,7 @@ SPACEBASE=$(cd "$SPACEBASE" && pwd -P)
 TMPDIRS="$TMPDIRS $SPACEBASE"
 tmux -L "$E" -f /dev/null new-session -d -s work -x 200 -y 50
 inert_slots "$E"
-tmux -L "$E" set-option -g @ide-cwd "$SPACEBASE"
+tmux -L "$E" set-option -g @workdesk-cwd "$SPACEBASE"
 tmux -L "$E" run-shell "'${IDE}' toggle"
 sleep 0.3
 main_path=$(tmux -L "$E" display-message -t work:ide -p '#{pane_current_path}')
@@ -171,21 +171,21 @@ yazi_path=$(tmux -L "$E" list-panes -t work:ide -F '#{pane_left}|#{pane_current_
 check "left slot cwd (with space) is correct" "$SPACEBASE" "$yazi_path"
 
 # ═════════════════ Scenario F: entrypoint binds the key, teardown removes it + the window ═════════════════
-echo "── Scenario F: ide.tmux installs the bind; teardown.sh unbinds + kills the window"
+echo "── Scenario F: workdesk.tmux installs the bind; teardown.sh unbinds + kills the window"
 new_sock F; F=$SOCK
 tmux -L "$F" -f /dev/null new-session -d -s work -x 200 -y 50
 inert_slots "$F"
-tmux -L "$F" run-shell "'${REPO_DIR}/ide.tmux'"
+tmux -L "$F" run-shell "'${REPO_DIR}/workdesk.tmux'"
 sleep 0.2
-bound=$(tmux -L "$F" list-keys -T prefix 2>/dev/null | grep -c 'ide.sh.*toggle')
-check "prefix key bound after ide.tmux" "1" "$bound"
+bound=$(tmux -L "$F" list-keys -T prefix 2>/dev/null | grep -c 'workdesk.sh.*toggle')
+check "prefix key bound after workdesk.tmux" "1" "$bound"
 # build a window, then tear down
 tmux -L "$F" run-shell "'${IDE}' toggle"
 sleep 0.3
 check "ide window present before teardown" "1" "$(tmux -L "$F" list-windows -t work -F '#{window_name}' | grep -cx 'ide')"
 tmux -L "$F" run-shell "'${REPO_DIR}/scripts/teardown.sh'"
 sleep 0.2
-check "prefix key unbound after teardown" "0" "$(tmux -L "$F" list-keys -T prefix 2>/dev/null | grep -c 'ide.sh.*toggle')"
+check "prefix key unbound after teardown" "0" "$(tmux -L "$F" list-keys -T prefix 2>/dev/null | grep -c 'workdesk.sh.*toggle')"
 check "ide window killed after teardown" "0" "$(tmux -L "$F" list-windows -t work -F '#{window_name}' | grep -cx 'ide')"
 
 echo ""

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# helpers.sh — shared option helpers for tmux-ide.
+# helpers.sh — shared option helpers for tmux-workdesk.
 #
 # This file is meant to be sourced, not executed. It intentionally does NOT
 # use `set -e`: it is pulled into scripts that tmux calls from a binding via

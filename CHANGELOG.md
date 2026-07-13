@@ -1,8 +1,21 @@
 # Changelog
 
-All notable changes to tmux-ide are documented here. The format follows
+All notable changes to tmux-workdesk are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [0.3.0] - 2026-07-13
+
+### Changed
+
+- **Project renamed: `tmux-ide` → `tmux-workdesk`.** An existing plugin
+  (guysoft/tmux-ide) already occupies the name with a near-identical concept;
+  renaming pre-release avoids permanent search confusion. Everything moves
+  with the name: entry point `workdesk.tmux`, main script
+  `scripts/workdesk.sh`, the whole option namespace `@ide-*` → `@workdesk-*`
+  (including the `@workdesk-window` marker), and status messages now prefixed
+  `workdesk:`. The default window name stays `ide` — it describes the layout,
+  not the plugin.
 
 ## [0.2.1] - 2026-07-12
 
@@ -18,10 +31,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
-- **Right-column split** (`@ide-right-bottom-cmd` / `@ide-right-bottom-height`):
+- **Right-column split** (`@workdesk-right-bottom-cmd` / `@workdesk-right-bottom-height`):
   stack a second command under the right slot — e.g. a file tree above an
   agent CLI.
-- **`@ide-window 1` window marker** on every window the plugin builds, so
+- **`@workdesk-window 1` window marker** on every window the plugin builds, so
   external auto-layout/rebalance automation can recognise and skip them.
   (Found live: a user rebalance hook running `select-layout -E` flattened the
   plugin's 60/40 stack seconds after the build.)
@@ -54,14 +67,14 @@ Initial release.
 - **One-key IDE layout** (`prefix + i` by default): turns the current project
   into a dedicated window — a full-height file tree on the left (yazi), a main
   workspace in the centre, a git panel below it (lazygit), and an AI-assistant
-  CLI on the right (claude, or any command). Rebind or disable with `@ide-bind`
+  CLI on the right (claude, or any command). Rebind or disable with `@workdesk-bind`
   (set to `none` to disable). The default `prefix + i` overrides tmux's built-in
   `display-message` binding.
-- **Toggle**: if the IDE window (named `@ide-window-name`, default `ide`) already
+- **Toggle**: if the IDE window (named `@workdesk-window-name`, default `ide`) already
   exists in the session, the key just switches to it — it never rebuilds.
 - **Swappable, resizable slots**: every slot's program and size is an option.
-  `@ide-left-cmd`/`@ide-right-cmd`/`@ide-bottom-cmd`/`@ide-main-cmd` for the
-  commands; `@ide-left-width`/`@ide-right-width`/`@ide-bottom-height` for the
+  `@workdesk-left-cmd`/`@workdesk-right-cmd`/`@workdesk-bottom-cmd`/`@workdesk-main-cmd` for the
+  commands; `@workdesk-left-width`/`@workdesk-right-width`/`@workdesk-bottom-height` for the
   sizes (percentages of the window).
 - **Exact proportions independent of split order**: width/height options are
   converted from window percentages to absolute cell counts and passed to
@@ -70,10 +83,10 @@ Initial release.
   the `-l N%` percentage syntax added in 3.1).
 - **Command guard**: if a slot's program is not on `PATH`, that slot opens a
   plain shell instead and a `display-message` says
-  `ide: <cmd> not found, slot left as shell`.
+  `workdesk: <cmd> not found, slot left as shell`.
 - **Skip a slot**: setting a slot's `*-cmd` option to an empty string skips that
   split entirely; the neighbouring pane keeps the space.
-- **Space-safe cwd**: the layout root (`@ide-cwd`, default the triggering pane's
+- **Space-safe cwd**: the layout root (`@workdesk-cwd`, default the triggering pane's
   path) is passed through `split-window -c` with correct quoting, so project
   directories containing spaces work.
 - `scripts/teardown.sh` for clean removal (unbind the key + kill the `ide`
@@ -87,19 +100,19 @@ Initial release.
 
 ### Naming
 
-- The name `tmux-ide` is shared with several unrelated projects, most notably
-  [guysoft/tmux-ide](https://github.com/guysoft/tmux-ide) (also a one-key IDE
+- The name `tmux-workdesk` is shared with several unrelated projects, most notably
+  [guysoft/tmux-workdesk](https://github.com/guysoft/tmux-workdesk) (also a one-key IDE
   layout: editor + AI agent + terminal, rooted at the current pane's cwd,
-  tmux-resurrect compatible, `@ide-*` options). Keeping the name is a deliberate
-  choice, not an oversight: installs are namespaced (`joneshong-skills/tmux-ide`),
+  tmux-resurrect compatible, `@workdesk-*` options). Keeping the name is a deliberate
+  choice, not an oversight: installs are namespaced (`joneshong-skills/tmux-workdesk`),
   so there is no install-time ambiguity. See the README's "Relation to other
-  `tmux-ide` plugins" section for how this plugin differs (four slots with a
+  `tmux-workdesk` plugins" section for how this plugin differs (four slots with a
   dedicated file manager and git panel; editor-agnostic; no nvim/RPC coupling;
   tmux 2.4 floor).
 
 ### Security note
 
-- `@ide-*-cmd` options run commands. They come from your own `~/.tmux.conf`, but
+- `@workdesk-*-cmd` options run commands. They come from your own `~/.tmux.conf`, but
   treat them like any shell command you place in a config file.
 
 ### Tested on
