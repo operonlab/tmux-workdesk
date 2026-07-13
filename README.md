@@ -7,6 +7,10 @@ keypress — a file tree on the left, your main workspace in the centre, a git
 panel below it, and an AI-assistant CLI on the right. Every slot's program and
 size is swappable, and any slot can be turned off.
 
+![tmux-workdesk after one keypress — a four-slot IDE window: yazi file tree on the left, a source file open in the main workspace, lazygit git panel below it, and an AI-assistant slot on the right](docs/screenshot.png)
+
+*One `prefix + i` turns a project directory into this four-slot layout — files · workspace over git · agent — all rooted at the same directory.*
+
 ## What is this?
 
 When you're working on a project you usually want the same handful of things on
