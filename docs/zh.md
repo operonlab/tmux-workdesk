@@ -200,19 +200,17 @@ tmux 每條 pane 邊界會吃掉一格，所以 200 欄視窗的 20% / ~50% / 30
   ＋ 一段 `tmux send-keys` 橋接）寫在
   [docs/yazi-integration.md](yazi-integration.md)；**v0.1 不內建**。
 
-## 與其他 `tmux-workdesk` 外掛的關係
+## 為什麼不叫 `tmux-ide`？
 
-`tmux-workdesk` 這個名字有好幾個彼此無關的專案各自取用——其中最接近的是
-[guysoft/tmux-workdesk](https://github.com/guysoft/tmux-workdesk)（`nvim + opencode` 的
-三格佈局，並把 nvim 的 RPC socket 暴露出來給 agent 做除錯），另外還有
-[wavyrai/tmux-workdesk](https://github.com/wavyrai/tmux-workdesk) 與
+這個外掛開發期間短暫叫過 `tmux-ide`，但這名字已有好幾個彼此無關的專案各自取用——
+其中最接近的是 [guysoft/tmux-ide](https://github.com/guysoft/tmux-ide)
+（`nvim + opencode` 的三格佈局，並把 nvim 的 RPC socket 暴露出來給 agent 做除錯），
+另外還有 [wavyrai/tmux-ide](https://github.com/wavyrai/tmux-ide) 與
 [sandeeprenjith/TMUX-IDE](https://github.com/sandeeprenjith/TMUX-IDE)。
+與其擠進一個已經很擠的名字，本專案在首次發布前改名為 **tmux-workdesk**，
+與上述任何一個專案都沒有關聯。
 
-**本 repo 與上述任何一個都沒有關聯。** 之所以沿用這個名字是刻意的：它直白地說明了
-外掛在做什麼；而且安裝走命名空間（`set -g @plugin 'operonlab/tmux-workdesk'`），
-所以你抓到的永遠是**這一個**，不會抓成別人的。
-
-與最接近的 guysoft/tmux-workdesk 的差異：
+與最接近的 guysoft/tmux-ide 的差異：
 
 - **四格，而非三格**——左側多一個全高的檔案管理器（yazi），主 pane 下方多一個
   獨立的 git 面板（lazygit），對比 guysoft 的 editor + agent + terminal。

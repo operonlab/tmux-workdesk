@@ -100,15 +100,13 @@ Initial release.
 
 ### Naming
 
-- The name `tmux-workdesk` is shared with several unrelated projects, most notably
-  [guysoft/tmux-workdesk](https://github.com/guysoft/tmux-workdesk) (also a one-key IDE
-  layout: editor + AI agent + terminal, rooted at the current pane's cwd,
-  tmux-resurrect compatible, `@workdesk-*` options). Keeping the name is a deliberate
-  choice, not an oversight: installs are namespaced (`operonlab/tmux-workdesk`),
-  so there is no install-time ambiguity. See the README's "Relation to other
-  `tmux-workdesk` plugins" section for how this plugin differs (four slots with a
-  dedicated file manager and git panel; editor-agnostic; no nvim/RPC coupling;
-  tmux 2.4 floor).
+- 0.1.0 shipped as `tmux-ide`, sharing that name with several unrelated
+  projects (most notably [guysoft/tmux-ide](https://github.com/guysoft/tmux-ide),
+  also a one-key IDE layout). The keep-the-name-and-disambiguate stance recorded
+  here was **superseded by the 0.3.0 rename to `tmux-workdesk`** — see the
+  README's "Why not `tmux-ide`?" section for how this plugin differs (four slots
+  with a dedicated file manager and git panel; editor-agnostic; no nvim/RPC
+  coupling; tmux 2.4 floor).
 
 ### Security note
 
@@ -117,5 +115,6 @@ Initial release.
 
 ### Tested on
 
-- tmux **next-3.8** (macOS, Homebrew HEAD) and the Ubuntu CI runner's tmux.
+- tmux **next-3.8** (macOS, Homebrew HEAD) at 0.1.0; **tmux 3.7b** (macOS,
+  Homebrew stable) from 0.2.x on, plus the Ubuntu CI runner's tmux.
   Documented floor: **tmux 2.4**.

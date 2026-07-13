@@ -227,24 +227,22 @@ just press `prefix + i` again to rebuild.
   written up in [docs/yazi-integration.md](docs/yazi-integration.md); it is
   **not bundled in v0.1**.
 
-## Relation to other `tmux-workdesk` plugins
+## Why not `tmux-ide`?
 
-`tmux-workdesk` is a name several unrelated projects picked independently — most
-notably [guysoft/tmux-workdesk](https://github.com/guysoft/tmux-workdesk) (a 3-pane
+This plugin was briefly named `tmux-ide` during development, but that name is
+already taken by several unrelated projects — most notably
+[guysoft/tmux-ide](https://github.com/guysoft/tmux-ide) (a 3-pane
 `nvim + opencode` layout that exposes the nvim RPC socket for agent-driven
-debugging), plus [wavyrai/tmux-workdesk](https://github.com/wavyrai/tmux-workdesk) and
-[sandeeprenjith/TMUX-IDE](https://github.com/sandeeprenjith/TMUX-IDE).
+debugging), plus [wavyrai/tmux-ide](https://github.com/wavyrai/tmux-ide) and
+[sandeeprenjith/TMUX-IDE](https://github.com/sandeeprenjith/TMUX-IDE). Rather
+than pile onto a crowded name, this project renamed to **tmux-workdesk** before
+its first release. It is not affiliated with any of the projects above.
 
-**This repo is not affiliated with any of them.** The name is kept on purpose:
-it plainly says what the plugin does, and installs are namespaced
-(`set -g @plugin 'operonlab/tmux-workdesk'`), so you always fetch *this* one,
-never another author's.
-
-How this one differs from guysoft/tmux-workdesk, the closest sibling:
+How this one differs from guysoft/tmux-ide, the closest sibling:
 
 - **Four slots, not three** — a full-height file manager (yazi) on the left and
   a first-class git panel (lazygit) below the main pane, versus guysoft's
-  editor + agent + terminal.
+  editor + agent + terminal trio.
 - **Editor-agnostic** — the main pane defaults to a plain shell (point
   `@workdesk-main-cmd` at any editor you like); there is no nvim coupling and no RPC
   socket.
