@@ -111,8 +111,7 @@ that's fine, the setting just takes effect next time you start tmux.)
 
 ## Demo
 
-*Demo GIF coming soon — for now, picture the ASCII layout above appearing in one
-keypress.*
+![tmux-workdesk demo — one keypress builds a four-slot IDE window (yazi · shell over lazygit · agent) and toggles back](docs/demo.gif)
 
 ## Options
 
