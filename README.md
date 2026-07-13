@@ -254,8 +254,8 @@ How this one differs from guysoft/tmux-ide, the closest sibling:
 - **tmux 2.4 floor** — sizes are converted to absolute cells, so the layout is
   exact regardless of split order and needs no modern percentage syntax.
 
-Heads-up: both plugins read the `@workdesk-*` option prefix, so don't enable both at
-once — pick one.
+A side benefit of the rename: the option prefixes no longer collide —
+`@workdesk-*` here versus guysoft's `@ide-*` — so enabling both won't cross wires.
 
 ## Credits / License
 
