@@ -62,7 +62,7 @@ tmux source ~/.tmux.conf
 接著在 `~/.tmux.conf` 裡、`run '~/.tmux/plugins/tpm/tpm'` 那行的**上面**，加：
 
 ```tmux
-set -g @plugin 'joneshong-skills/tmux-workdesk'
+set -g @plugin 'operonlab/tmux-workdesk'
 ```
 
 重新載入並安裝：
@@ -77,7 +77,7 @@ tmux source ~/.tmux.conf   # 1. 重新載入設定
 隨便找個地方 clone，然後往 `~/.tmux.conf` 加一行：
 
 ```sh
-git clone https://github.com/joneshong-skills/tmux-workdesk ~/.tmux/plugins/tmux-workdesk
+git clone https://github.com/operonlab/tmux-workdesk ~/.tmux/plugins/tmux-workdesk
 printf '%s\n' "run-shell '~/.tmux/plugins/tmux-workdesk/workdesk.tmux'" >> ~/.tmux.conf
 tmux source ~/.tmux.conf
 ```
@@ -137,7 +137,7 @@ set -g @workdesk-bind 'g'
 set -g @workdesk-main-cmd 'nvim'
 set -g @workdesk-right-cmd 'codex'
 set -g @workdesk-left-width '25'
-set -g @plugin 'joneshong-skills/tmux-workdesk'
+set -g @plugin 'operonlab/tmux-workdesk'
 ```
 
 範例——不要 AI 格，只要 檔案 + 編輯器 + git：
@@ -145,7 +145,7 @@ set -g @plugin 'joneshong-skills/tmux-workdesk'
 ```tmux
 set -g @workdesk-right-cmd ''
 set -g @workdesk-main-cmd 'nvim'
-set -g @plugin 'joneshong-skills/tmux-workdesk'
+set -g @plugin 'operonlab/tmux-workdesk'
 ```
 
 ## 解除安裝
@@ -209,7 +209,7 @@ tmux 每條 pane 邊界會吃掉一格，所以 200 欄視窗的 20% / ~50% / 30
 [sandeeprenjith/TMUX-IDE](https://github.com/sandeeprenjith/TMUX-IDE)。
 
 **本 repo 與上述任何一個都沒有關聯。** 之所以沿用這個名字是刻意的：它直白地說明了
-外掛在做什麼；而且安裝走命名空間（`set -g @plugin 'joneshong-skills/tmux-workdesk'`），
+外掛在做什麼；而且安裝走命名空間（`set -g @plugin 'operonlab/tmux-workdesk'`），
 所以你抓到的永遠是**這一個**，不會抓成別人的。
 
 與最接近的 guysoft/tmux-workdesk 的差異：

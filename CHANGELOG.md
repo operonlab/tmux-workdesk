@@ -104,7 +104,7 @@ Initial release.
   [guysoft/tmux-workdesk](https://github.com/guysoft/tmux-workdesk) (also a one-key IDE
   layout: editor + AI agent + terminal, rooted at the current pane's cwd,
   tmux-resurrect compatible, `@workdesk-*` options). Keeping the name is a deliberate
-  choice, not an oversight: installs are namespaced (`joneshong-skills/tmux-workdesk`),
+  choice, not an oversight: installs are namespaced (`operonlab/tmux-workdesk`),
   so there is no install-time ambiguity. See the README's "Relation to other
   `tmux-workdesk` plugins" section for how this plugin differs (four slots with a
   dedicated file manager and git panel; editor-agnostic; no nvim/RPC coupling;

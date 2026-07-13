@@ -74,7 +74,7 @@ Then add tmux-workdesk. Put this line in your `~/.tmux.conf` **above** the
 `run '~/.tmux/plugins/tpm/tpm'` line:
 
 ```tmux
-set -g @plugin 'joneshong-skills/tmux-workdesk'
+set -g @plugin 'operonlab/tmux-workdesk'
 ```
 
 Reload and install:
@@ -89,7 +89,7 @@ tmux source ~/.tmux.conf   # 1. reload config
 Clone it anywhere, then add one line to `~/.tmux.conf`:
 
 ```sh
-git clone https://github.com/joneshong-skills/tmux-workdesk ~/.tmux/plugins/tmux-workdesk
+git clone https://github.com/operonlab/tmux-workdesk ~/.tmux/plugins/tmux-workdesk
 printf '%s\n' "run-shell '~/.tmux/plugins/tmux-workdesk/workdesk.tmux'" >> ~/.tmux.conf
 tmux source ~/.tmux.conf
 ```
@@ -158,7 +158,7 @@ set -g @workdesk-bind 'g'
 set -g @workdesk-main-cmd 'nvim'
 set -g @workdesk-right-cmd 'codex'
 set -g @workdesk-left-width '25'
-set -g @plugin 'joneshong-skills/tmux-workdesk'
+set -g @plugin 'operonlab/tmux-workdesk'
 ```
 
 Example — no AI slot, just files + editor + git:
@@ -166,7 +166,7 @@ Example — no AI slot, just files + editor + git:
 ```tmux
 set -g @workdesk-right-cmd ''
 set -g @workdesk-main-cmd 'nvim'
-set -g @plugin 'joneshong-skills/tmux-workdesk'
+set -g @plugin 'operonlab/tmux-workdesk'
 ```
 
 ## Uninstall
@@ -237,7 +237,7 @@ debugging), plus [wavyrai/tmux-workdesk](https://github.com/wavyrai/tmux-workdes
 
 **This repo is not affiliated with any of them.** The name is kept on purpose:
 it plainly says what the plugin does, and installs are namespaced
-(`set -g @plugin 'joneshong-skills/tmux-workdesk'`), so you always fetch *this* one,
+(`set -g @plugin 'operonlab/tmux-workdesk'`), so you always fetch *this* one,
 never another author's.
 
 How this one differs from guysoft/tmux-workdesk, the closest sibling:
