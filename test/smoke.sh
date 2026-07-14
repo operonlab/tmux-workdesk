@@ -225,6 +225,64 @@ tmux -L "$G" run-shell "'${IDE}' cycle"
 sleep 0.3
 check "cycle steps grid -> columns" "columns" "$(tmux -L "$G" show-option -t work:1 -wqv @workdesk-layout)"
 
+# ═════════════════ Scenario H: rows → 3 stacked, full-width panes ═════════════════
+echo "── Scenario H: rows (3 stacked full-width panes)"
+new_sock H; H=$SOCK
+tmux -L "$H" -f /dev/null new-session -d -s work -x 200 -y 50
+tmux -L "$H" run-shell "'${IDE}' rows"
+sleep 0.3
+hgeom=$(panes_of "$H" work:0)
+check "rows builds 3 panes" "3" "$(printf '%s\n' "$hgeom" | grep -c .)"
+non_full_w=$(printf '%s\n' "$hgeom" | awk '$3!=200{c++}END{print c+0}')
+check "rows panes are all full width (200)" "0" "$non_full_w"
+rows_stacked=$(printf '%s\n' "$hgeom" | awk '{print $2}' | sort -u | wc -l | tr -d ' ')
+check "rows panes stack at 3 distinct rows" "3" "$rows_stacked"
+
+# ═════════════════ Scenario I: duo → exactly 2 panes ═════════════════
+echo "── Scenario I: duo (exactly 2 panes)"
+new_sock I; I=$SOCK
+tmux -L "$I" -f /dev/null new-session -d -s work -x 200 -y 50
+tmux -L "$I" run-shell "'${IDE}' duo"
+sleep 0.3
+check "duo builds exactly 2 panes" "2" "$(panes_of "$I" work:0 | grep -c .)"
+
+# ═════════════════ Scenario J: lead → main-vertical with a wide left pane ═════════════════
+echo "── Scenario J: lead (main-vertical, wide left pane)"
+new_sock J; J=$SOCK
+tmux -L "$J" -f /dev/null new-session -d -s work -x 200 -y 50
+tmux -L "$J" run-shell "'${IDE}' lead"
+sleep 0.3
+jgeom=$(panes_of "$J" work:0)
+check "lead builds 2 panes" "2" "$(printf '%s\n' "$jgeom" | grep -c .)"
+lead_w=$(printf '%s\n' "$jgeom" | awk '$1==0{print $3; exit}')
+check "lead pane width (50% of 200)" "100" "$lead_w"
+
+# ═════════════════ Scenario K: focus toggles window_zoomed_flag ═════════════════
+echo "── Scenario K: focus toggles window_zoomed_flag"
+new_sock K; K=$SOCK
+tmux -L "$K" -f /dev/null new-session -d -s work -x 200 -y 50
+tmux -L "$K" run-shell "'${IDE}' duo"
+sleep 0.3
+tmux -L "$K" run-shell "'${IDE}' focus"
+sleep 0.2
+check "focus zooms the active pane" "1" "$(tmux -L "$K" display-message -t work:0 -p '#{window_zoomed_flag}')"
+tmux -L "$K" run-shell "'${IDE}' focus"
+sleep 0.2
+check "focus again restores (un-zooms)" "0" "$(tmux -L "$K" display-message -t work:0 -p '#{window_zoomed_flag}')"
+
+# ═════════════════ Scenario L: tile 3 1 → 3 even columns ═════════════════
+echo "── Scenario L: tile 3 1 (3 even columns)"
+new_sock L; L=$SOCK
+tmux -L "$L" -f /dev/null new-session -d -s work -x 200 -y 50
+tmux -L "$L" run-shell "'${IDE}' tile 3 1"
+sleep 0.3
+lgeom=$(panes_of "$L" work:0)
+check "tile 3 1 builds 3 panes" "3" "$(printf '%s\n' "$lgeom" | grep -c .)"
+non_full_h=$(printf '%s\n' "$lgeom" | awk '$4!=50{c++}END{print c+0}')
+check "tile 3 1 panes are all full height (50)" "0" "$non_full_h"
+distinct_left=$(printf '%s\n' "$lgeom" | awk '{print $1}' | sort -u | wc -l | tr -d ' ')
+check "tile 3 1 panes sit at 3 distinct columns" "3" "$distinct_left"
+
 echo ""
 if [ "$FAILS" -eq 0 ]; then
 	echo "ALL SMOKE CHECKS PASSED"
