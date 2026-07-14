@@ -1,4 +1,4 @@
-#!/Users/joneshong/.local/bin/python3
+#!/usr/bin/env python3
 """Render deterministic KeyCastr-style svelte bezel PNGs."""
 
 from __future__ import annotations
@@ -105,7 +105,9 @@ def _select_symbol_font() -> Path:
         return SFNS_FONT
     if _supports_modifier_glyphs(APPLE_SYMBOLS_FONT):
         return APPLE_SYMBOLS_FONT
-    raise RuntimeError("Neither SFNS.ttf nor Apple Symbols.ttf can render modifier glyphs")
+    raise RuntimeError(
+        "Neither SFNS.ttf nor Apple Symbols.ttf can render modifier glyphs"
+    )
 
 
 def _font_for_character(
@@ -174,7 +176,9 @@ def _bezel_width(
     side_padding = glyph_height * 0.5
     content_width = advance / SCALE + side_padding * 2
 
-    widest_modifier = max(strip_face.font.getlength(symbol) for symbol in MODIFIERS) / SCALE
+    widest_modifier = (
+        max(strip_face.font.getlength(symbol) for symbol in MODIFIERS) / SCALE
+    )
     strip_minimum = 4 * (widest_modifier + 14)
     required_width = max(content_width, strip_minimum)
     return max(4, int((required_width + 3) // 4) * 4)
