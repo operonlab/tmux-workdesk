@@ -266,47 +266,149 @@ mark_layout() {
 	tmux set-option -w @workdesk-layout "$1" 2>/dev/null || true
 }
 
+# rows_count — read @workdesk-rows-count, clamp to 2-8, default 3.
+rows_count() {
+	raw=$(get_tmux_option "@workdesk-rows-count" "3")
+	n="${raw//[!0-9]/}"
+	n="${n:-3}"
+	n=$((10#$n))
+	[ "$n" -lt 2 ] && n=2
+	[ "$n" -gt 8 ] && n=8
+	printf '%s' "$n"
+}
+
+# ── two parameterized primitives ──────────────────────────────────────────
+# Every named layout below is a thin alias over one of these. A primitive does
+# the pane math + native tmux layout and lands focus; the alias records the
+# ring name via mark_layout. Neither primitive marks the layout itself.
+
+# layout_tile <X> <Y> — an X-by-Y tile of panes on the CURRENT window.
+#   "auto" on either axis -> adaptive tiled over >=2 panes ("fleet").
+#   Y==1 -> even-horizontal (X exact columns); X==1 -> even-vertical (Y exact
+#   rows); else tiled (near-square; 2x2 with 4 panes is exact). Exact non-square
+#   N×M (e.g. 3×2) falls back to tmux's tiled arrangement — an accepted v1 limit.
+layout_tile() {
+	tx="$1"
+	ty="$2"
+	if [ "$tx" = "auto" ] || [ "$ty" = "auto" ]; then
+		ensure_panes 2
+		tmux select-layout tiled >/dev/null 2>&1 || true
+		focus_first
+		return
+	fi
+	tx="${tx//[!0-9]/}"; tx="${tx:-2}"; tx=$((10#$tx)); [ "$tx" -lt 1 ] && tx=1
+	ty="${ty//[!0-9]/}"; ty="${ty:-2}"; ty=$((10#$ty)); [ "$ty" -lt 1 ] && ty=1
+	ensure_panes "$((tx * ty))"
+	if [ "$ty" -eq 1 ]; then
+		tmux select-layout even-horizontal >/dev/null 2>&1 || true
+	elif [ "$tx" -eq 1 ]; then
+		tmux select-layout even-vertical >/dev/null 2>&1 || true
+	else
+		tmux select-layout tiled >/dev/null 2>&1 || true
+	fi
+	focus_first
+}
+
+# layout_main <v|h> <pct> [n] — a main pane sized to <pct>% of the window with
+# the rest stacked beside/below it. v (default) = main-vertical (left column
+# <pct>% wide); h = main-horizontal (top row <pct>% tall). n forces the pane
+# count (default 2). pct is stripped to digits (default 50) and clamped 10..90.
+layout_main() {
+	orient="$1"
+	pct="${2//[!0-9]/}"; pct="${pct:-50}"; pct=$((10#$pct))
+	[ "$pct" -lt 10 ] && pct=10
+	[ "$pct" -gt 90 ] && pct=90
+	if [ -n "${3:-}" ]; then
+		ensure_panes "$3"
+	else
+		ensure_panes 2
+	fi
+	WW=$(num_or "$(tmux display-message -p '#{window_width}' 2>/dev/null)" 0)
+	WH=$(num_or "$(tmux display-message -p '#{window_height}' 2>/dev/null)" 0)
+	if [ "$orient" = "h" ]; then
+		if [ "$WH" -ge 4 ]; then
+			tmux set-window-option main-pane-height "$((WH * pct / 100))" 2>/dev/null || true
+		fi
+		tmux select-layout main-horizontal >/dev/null 2>&1 || true
+	else
+		if [ "$WW" -ge 4 ]; then
+			tmux set-window-option main-pane-width "$((WW * pct / 100))" 2>/dev/null || true
+		fi
+		tmux select-layout main-vertical >/dev/null 2>&1 || true
+	fi
+	focus_first
+}
+
+# ── thin named aliases: call a primitive, then record the ring name ──
+
 # grid — 2x2 tiled square (4 panes).
 layout_grid() {
-	ensure_panes 4
-	tmux select-layout tiled >/dev/null 2>&1 || true
+	layout_tile 2 2
 	mark_layout grid
-	focus_first
 }
 
 # columns — N side-by-side columns (@workdesk-columns-count, default 4).
 layout_columns() {
-	n=$(columns_count)
-	ensure_panes "$n"
-	tmux select-layout even-horizontal >/dev/null 2>&1 || true
+	layout_tile "$(columns_count)" 1
 	mark_layout columns
-	focus_first
 }
 
-# l3 — left half (50% width, full height) + right half split into 3 stacked
-# panes (~33% each). main-vertical with main-pane-width pinned to half the
+# rows — N stacked rows (@workdesk-rows-count, default 3).
+layout_rows() {
+	layout_tile 1 "$(rows_count)"
+	mark_layout rows
+}
+
+# fleet — adaptive tiled grid over the current panes ("watch many").
+layout_fleet() {
+	layout_tile auto auto
+	mark_layout fleet
+}
+
+# lead — a 50% lead pane on the left + the rest stacked on the right (the
+# dominant agent layout).
+layout_lead() {
+	layout_main v 50
+	mark_layout lead
+}
+
+# l3 — left half (50% width, full height) + exactly 3 stacked panes on the
+# right (~33% each). main-vertical with main-pane-width pinned to half the
 # window is exactly this shape; the right column auto-divides among the rest.
 layout_l3() {
-	ensure_panes 4
-	WW=$(num_or "$(tmux display-message -p '#{window_width}' 2>/dev/null)" 0)
-	if [ "$WW" -ge 4 ]; then
-		tmux set-window-option main-pane-width "$((WW / 2))" 2>/dev/null || true
-	fi
-	tmux select-layout main-vertical >/dev/null 2>&1 || true
+	layout_main v 50 4
 	mark_layout l3
-	focus_first
 }
 
-# The geometry layouts form a ring the `cycle` command steps through, in order.
-# (The IDE layout is a scaffold in its own window, not a member of the ring.)
-WORKDESK_RING="grid columns l3"
+# mainh — a 60% main pane on top + a terminal strip below.
+layout_mainh() {
+	layout_main h 60
+	mark_layout mainh
+}
 
-# cycle — apply the next geometry layout after the current window's one,
-# wrapping around. A window with no recorded layout starts at the ring's head.
+# duo — two equal panes side by side.
+layout_duo() {
+	layout_tile 2 1
+	mark_layout duo
+}
+
+# focus — zoom the active pane / restore (the "watch many, focus one" verb).
+layout_focus() {
+	tmux resize-pane -Z 2>/dev/null || true
+}
+
+# The `cycle` command steps the current window through a ring of layouts read
+# from @workdesk-cycle-ring (default "grid columns rows"). The IDE layout is a
+# scaffold in its own window, not a member of the ring.
+
+# cycle — apply the next layout after the current window's one, wrapping around.
+# A window with no recorded layout starts at the ring's head. Ring entries that
+# don't name a known layout are skipped.
 layout_cycle() {
+	ring=$(get_tmux_option "@workdesk-cycle-ring" "grid columns rows")
 	cur=$(tmux show-option -wqv @workdesk-layout 2>/dev/null || true)
 	next="" seen="" head=""
-	for x in $WORKDESK_RING; do
+	for x in $ring; do
 		[ -z "$head" ] && head="$x"
 		if [ -n "$seen" ]; then
 			next="$x"
@@ -318,7 +420,13 @@ layout_cycle() {
 	case "$next" in
 	grid) layout_grid ;;
 	columns) layout_columns ;;
+	rows) layout_rows ;;
+	fleet) layout_fleet ;;
+	lead) layout_lead ;;
 	l3) layout_l3 ;;
+	mainh) layout_mainh ;;
+	duo) layout_duo ;;
+	*) : ;;
 	esac
 }
 
@@ -326,24 +434,38 @@ layout_cycle() {
 layout_menu() {
 	self="${CURRENT_DIR}/workdesk.sh"
 	tmux display-menu -T '#[align=centre]#[fg=#fab387] workdesk ' -x C -y C \
-		'IDE layout'      i "run-shell \"'${self}' ide\"" \
+		'IDE layout'       i "run-shell \"'${self}' ide\"" \
 		'' \
-		'2×2 grid'        g "run-shell \"'${self}' grid\"" \
-		'Columns'         c "run-shell \"'${self}' columns\"" \
-		'Left │ 3-stack'  l "run-shell \"'${self}' l3\"" \
+		'2×2 grid'         g "run-shell \"'${self}' grid\"" \
+		'Columns'          c "run-shell \"'${self}' columns\"" \
+		'Rows'             r "run-shell \"'${self}' rows\"" \
+		'Left │ 3-stack'   l "run-shell \"'${self}' l3\"" \
+		'Lead + stack'     a "run-shell \"'${self}' lead\"" \
+		'Main + terminal'  m "run-shell \"'${self}' mainh\"" \
+		'Duo'              d "run-shell \"'${self}' duo\"" \
+		'Fleet'            f "run-shell \"'${self}' fleet\"" \
+		'Focus'            z "run-shell \"'${self}' focus\"" \
 		'' \
-		'Cancel'          q '' 2>/dev/null || true
+		'Cancel'           q '' 2>/dev/null || true
 }
 
 case "${1:-menu}" in
 toggle | ide) workdesk_toggle ;;
+tile) layout_tile "${2:-2}" "${3:-2}" ;;
+main) layout_main "${2:-v}" "${3:-50}" "${4:-}" ;;
 grid) layout_grid ;;
 columns | cols) layout_columns ;;
+rows) layout_rows ;;
+fleet) layout_fleet ;;
+lead) layout_lead ;;
 l3) layout_l3 ;;
+mainh) layout_mainh ;;
+duo) layout_duo ;;
+focus) layout_focus ;;
 cycle) layout_cycle ;;
 menu) layout_menu ;;
 *)
-	echo "usage: workdesk.sh {menu|ide|grid|columns|l3|cycle}" >&2
+	echo "usage: workdesk.sh {menu|ide|tile <X> <Y>|main <v|h> <pct> [n]|grid|columns|rows|fleet|lead|l3|mainh|duo|focus|cycle}" >&2
 	exit 1
 	;;
 esac
