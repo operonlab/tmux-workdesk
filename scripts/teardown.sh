@@ -21,7 +21,14 @@ for opt_default in \
 	"@workdesk-ide-bind:i" \
 	"@workdesk-grid-bind:g" \
 	"@workdesk-columns-bind:none" \
+	"@workdesk-rows-bind:none" \
 	"@workdesk-l3-bind:none" \
+	"@workdesk-lead-bind:none" \
+	"@workdesk-mainh-bind:none" \
+	"@workdesk-duo-bind:none" \
+	"@workdesk-fleet-bind:none" \
+	"@workdesk-focus-bind:none" \
+	"@workdesk-cycle-bind:none" \
 	"@workdesk-menu-bind:none"; do
 	key=$(get_tmux_option "${opt_default%%:*}" "${opt_default##*:}")
 	[ "$key" = "none" ] && continue
