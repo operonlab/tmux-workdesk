@@ -52,6 +52,9 @@ class Variant:
 VARIANTS: Final = (
     Variant("bezel-cb.png", "⌃B", 1),
     Variant("bezel-cbi.png", "⌃B I", None),
+    Variant("bezel-cbg.png", "⌃B G", None),
+    Variant("bezel-cbe.png", "⌃B E", None),
+    Variant("bezel-cba.png", "⌃B A", None),
     Variant("bezel-cb0.png", "⌃B 0", None),
 )
 

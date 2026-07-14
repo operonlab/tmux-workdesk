@@ -1,10 +1,12 @@
-# tmux-workdesk HERO SCREENSHOT — a single, high-resolution still of the layout
-# menu that `prefix + i` opens (IDE layout · 2×2 grid · Columns · Left | 3-stack).
-# Larger and sharper than a demo.gif frame, frozen with the menu open.
+# tmux-workdesk HERO SCREENSHOT — a single, high-resolution still of the IDE
+# layout that `prefix + i` builds (here with the slots opted into example
+# tools: a git TUI, a file manager, an AI-agent stand-in). One of the plugin's
+# layouts; the geometry layouts (grid / columns / left|3-stack) are shown in
+# docs/demo.gif.
 #
-# Fully self-contained: docs/demo-setup.sh stages an anonymous sample project and
-# a cockpit-style ISOLATED tmux server (socket wd-demo) — the user's live server
-# is never touched. Run from the repo root:  vhs docs/screenshot.tape
+# Fully self-contained: docs/demo-setup.sh stages an anonymous sample project
+# and a cockpit-style ISOLATED tmux server (socket wd-demo) — the user's live
+# server is never touched. Run from the repo root:  vhs docs/screenshot.tape
 Output "docs/screenshot.png"
 Require tmux
 
@@ -24,13 +26,13 @@ Type "clear; tmux -L wd-demo attach -t mini"
 Enter
 Sleep 1500ms
 Show
-Sleep 1200ms
+Sleep 800ms
 
-# prefix + i opens the layout menu; hold it open for the shutter
+# prefix + i builds the IDE layout; let the tools settle, then shoot
 Ctrl+B
 Sleep 500ms
 Type "i"
-Sleep 1500ms
+Sleep 4s
 
 # ---- the shutter ----
 Screenshot docs/screenshot.png

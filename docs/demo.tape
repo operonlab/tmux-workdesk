@@ -1,9 +1,12 @@
-# tmux-workdesk demo — one key opens a menu of layouts; pick one and the window
-# rearranges. Shows the switcher: prefix+i -> menu -> "l" (left | 3-stack) ->
-# prefix+i -> menu -> "i" (the IDE layout, slots opted into example tools).
+# tmux-workdesk demo — one prefix key per layout. Walks every layout:
+#   prefix + g  -> 2×2 grid       (geometry: rearranges the current window)
+#   prefix + e  -> columns        (same panes reflow — e is a README example key)
+#   prefix + a  -> left | 3-stack (same panes reflow — a is a README example key)
+#   prefix + i  -> IDE layout     (a pure-layout workspace in its own window;
+#                                  the slots here are opted into example tools)
 # Fully self-contained: docs/demo-setup.sh stages an anonymous sample project,
-# a cockpit-style themed ISOLATED tmux server (socket wd-demo), and harmless
-# tool stand-ins.
+# a cockpit-style themed ISOLATED tmux server (socket wd-demo) that also binds
+# columns->e and l3->a, and harmless tool stand-ins.
 #
 # Re-record from the repo root with:
 #   vhs docs/demo.tape && bash docs/demo-overlay.sh
@@ -33,25 +36,29 @@ Show
 # t=0.0  cockpit dwell
 Sleep 1600ms
 
-# t=1.6  prefix + i -> the layout menu (bezel "⌃B" 1.70, "⌃B I" 2.15)
+# t=1.6  prefix + g -> 2×2 grid (bezel "⌃B" 1.70, "⌃B G" 2.15)
+Ctrl+B
+Sleep 500ms
+Type "g"
+Sleep 2500ms
+
+# t=4.6  prefix + e -> columns, same panes reflow (bezel "⌃B" 4.70, "⌃B E" 5.15)
+Ctrl+B
+Sleep 500ms
+Type "e"
+Sleep 2500ms
+
+# t=7.7  prefix + a -> left | 3-stack, same panes (bezel "⌃B" 7.70, "⌃B A" 8.20)
+Ctrl+B
+Sleep 500ms
+Type "a"
+Sleep 2500ms
+
+# t=10.7  prefix + i -> the IDE layout window (bezel "⌃B" 10.75, "⌃B I" 11.25)
 Ctrl+B
 Sleep 500ms
 Type "i"
-Sleep 3600ms
-
-# t=5.7  pick "l" -> left | 3-stack rearranges the current window
-Type "l"
-Sleep 3000ms
-
-# t=8.8  prefix + i again -> menu (bezel "⌃B" 8.85, "⌃B I" 9.30)
-Ctrl+B
-Sleep 500ms
-Type "i"
-Sleep 3400ms
-
-# t=12.7  pick "i" -> the IDE layout window (git · files/agent), example tools
-Type "i"
-Sleep 5s
+Sleep 4500ms
 
 Hide
 Ctrl+B

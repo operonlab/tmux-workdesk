@@ -7,9 +7,9 @@ it and your window rearranges into that layout. No menu to navigate by default;
 just `prefix + i` for the IDE layout, `prefix + g` for a 2×2 grid, and so on. The
 layouts are the point; you decide what runs in the panes.
 
-![tmux-workdesk's layouts — IDE layout, 2×2 grid, Columns, Left | 3-stack](docs/screenshot.png)
+![tmux-workdesk's IDE layout — a git TUI on the left, a file manager over an AI-agent slot on the right (example tools; the slots are yours to fill)](docs/screenshot.png)
 
-*Each layout is one prefix key away: `prefix + i` opens the IDE layout, `prefix + g` rearranges the current window into a 2×2 grid.*
+*The IDE layout, one prefix key away (`prefix + i`) — here with the slots opted into example tools. The geometry layouts (2×2 grid, columns, left │ 3-stack) are shown in the [demo](#demo) below.*
 
 ## What is this?
 
