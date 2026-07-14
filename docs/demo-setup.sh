@@ -154,11 +154,10 @@ sleep 0.3
 "$TMUX_BIN" -L "$SOCK" set -g @workdesk-bottom-cmd "$WORK/agent-slot.sh"
 "$TMUX_BIN" -L "$SOCK" set -g @workdesk-bottom-height "40"
 "$TMUX_BIN" -L "$SOCK" set -g @workdesk-right-cmd "none"
-# bind the geometry layouts to the free keys the README recommends, so the demo
-# can show every layout by its own key (columns/l3 have no default key because
-# c/l are tmux's new-window/last-window).
-"$TMUX_BIN" -L "$SOCK" set -g @workdesk-columns-bind "e"
-"$TMUX_BIN" -L "$SOCK" set -g @workdesk-l3-bind "a"
+# bind the layouts the demo walks to free example keys (lead/rows have no
+# default key — this shows "bind any preset to a key you like").
+"$TMUX_BIN" -L "$SOCK" set -g @workdesk-lead-bind "a"
+"$TMUX_BIN" -L "$SOCK" set -g @workdesk-rows-bind "r"
 "$TMUX_BIN" -L "$SOCK" run-shell "$PLUGIN/workdesk.tmux"
 
 
