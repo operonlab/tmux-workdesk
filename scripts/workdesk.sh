@@ -260,10 +260,17 @@ focus_first() {
 	[ -n "$first" ] && tmux select-pane -t "$first" 2>/dev/null || true
 }
 
+# mark_layout <name> — record which geometry layout the current window is in, so
+# `cycle` knows where it is in the ring. Stored as a per-window option.
+mark_layout() {
+	tmux set-option -w @workdesk-layout "$1" 2>/dev/null || true
+}
+
 # grid — 2x2 tiled square (4 panes).
 layout_grid() {
 	ensure_panes 4
 	tmux select-layout tiled >/dev/null 2>&1 || true
+	mark_layout grid
 	focus_first
 }
 
@@ -272,6 +279,7 @@ layout_columns() {
 	n=$(columns_count)
 	ensure_panes "$n"
 	tmux select-layout even-horizontal >/dev/null 2>&1 || true
+	mark_layout columns
 	focus_first
 }
 
@@ -285,7 +293,33 @@ layout_l3() {
 		tmux set-window-option main-pane-width "$((WW / 2))" 2>/dev/null || true
 	fi
 	tmux select-layout main-vertical >/dev/null 2>&1 || true
+	mark_layout l3
 	focus_first
+}
+
+# The geometry layouts form a ring the `cycle` command steps through, in order.
+# (The IDE layout is a scaffold in its own window, not a member of the ring.)
+WORKDESK_RING="grid columns l3"
+
+# cycle — apply the next geometry layout after the current window's one,
+# wrapping around. A window with no recorded layout starts at the ring's head.
+layout_cycle() {
+	cur=$(tmux show-option -wqv @workdesk-layout 2>/dev/null || true)
+	next="" seen="" head=""
+	for x in $WORKDESK_RING; do
+		[ -z "$head" ] && head="$x"
+		if [ -n "$seen" ]; then
+			next="$x"
+			break
+		fi
+		[ "$x" = "$cur" ] && seen=1
+	done
+	[ -z "$next" ] && next="$head"
+	case "$next" in
+	grid) layout_grid ;;
+	columns) layout_columns ;;
+	l3) layout_l3 ;;
+	esac
 }
 
 # menu — the layout chooser (also installed as the prefix binding).
@@ -306,9 +340,10 @@ toggle | ide) workdesk_toggle ;;
 grid) layout_grid ;;
 columns | cols) layout_columns ;;
 l3) layout_l3 ;;
+cycle) layout_cycle ;;
 menu) layout_menu ;;
 *)
-	echo "usage: workdesk.sh {menu|ide|grid|columns|l3}" >&2
+	echo "usage: workdesk.sh {menu|ide|grid|columns|l3|cycle}" >&2
 	exit 1
 	;;
 esac

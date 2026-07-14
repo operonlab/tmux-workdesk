@@ -216,6 +216,15 @@ check "l3 left pane is full height" "50" "$l3_left_h"
 l3_right_count=$(printf '%s\n' "$l3geom" | awk '$1!=0{c++}END{print c+0}')
 check "l3 has 3 stacked right panes" "3" "$l3_right_count"
 
+# cycle steps the ring grid -> columns -> l3 -> grid; a fresh window starts at
+# the head (grid). Reuse work:1 (currently l3) and step it forward.
+tmux -L "$G" run-shell "'${IDE}' cycle"
+sleep 0.3
+check "cycle after l3 wraps to grid" "grid" "$(tmux -L "$G" show-option -t work:1 -wqv @workdesk-layout)"
+tmux -L "$G" run-shell "'${IDE}' cycle"
+sleep 0.3
+check "cycle steps grid -> columns" "columns" "$(tmux -L "$G" show-option -t work:1 -wqv @workdesk-layout)"
+
 echo ""
 if [ "$FAILS" -eq 0 ]; then
 	echo "ALL SMOKE CHECKS PASSED"

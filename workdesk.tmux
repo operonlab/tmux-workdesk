@@ -29,6 +29,11 @@ bind_layout "$(get_tmux_option "@workdesk-grid-bind" "g")"     grid
 bind_layout "$(get_tmux_option "@workdesk-columns-bind" "none")" columns
 bind_layout "$(get_tmux_option "@workdesk-l3-bind" "none")"    l3
 
+# Optional one-key cycle that steps the current window through the geometry
+# ring (grid -> columns -> l3 -> grid). Off by default; bind it to a free key
+# if you prefer "next layout" to per-layout keys (or use both).
+bind_layout "$(get_tmux_option "@workdesk-cycle-bind" "none")" cycle
+
 # Opt-in chooser (needs tmux 3.0+ for display-menu). Off by default so the
 # plugin's default path stays on the tmux 2.4 floor. Set @workdesk-menu-bind to
 # a key to bind a single menu of every layout.
