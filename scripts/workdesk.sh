@@ -401,23 +401,11 @@ layout_focus() {
 # from @workdesk-cycle-ring (default "grid columns rows"). The IDE layout is a
 # scaffold in its own window, not a member of the ring.
 
-# cycle — apply the next layout after the current window's one, wrapping around.
-# A window with no recorded layout starts at the ring's head. Ring entries that
-# don't name a known layout are skipped.
-layout_cycle() {
-	ring=$(get_tmux_option "@workdesk-cycle-ring" "grid columns rows")
-	cur=$(tmux show-option -wqv @workdesk-layout 2>/dev/null || true)
-	next="" seen="" head=""
-	for x in $ring; do
-		[ -z "$head" ] && head="$x"
-		if [ -n "$seen" ]; then
-			next="$x"
-			break
-		fi
-		[ "$x" = "$cur" ] && seen=1
-	done
-	[ -z "$next" ] && next="$head"
-	case "$next" in
+# apply_named <name> — run the layout for this canonical ring name; return 1 if
+# the name is not a known ring layout (so `cycle` can skip it). Each layout it
+# runs calls mark_layout, so @workdesk-layout ends up holding the canonical name.
+apply_named() {
+	case "$1" in
 	grid) layout_grid ;;
 	columns) layout_columns ;;
 	rows) layout_rows ;;
@@ -426,8 +414,54 @@ layout_cycle() {
 	l3) layout_l3 ;;
 	mainh) layout_mainh ;;
 	duo) layout_duo ;;
-	*) : ;;
+	*) return 1 ;;
 	esac
+}
+
+# cycle — apply the next KNOWN layout after the current window's one, wrapping
+# around. A window with no recorded layout starts at the ring's head. Unknown /
+# typo ring entries are skipped (they never applied, so mark_layout was never
+# called and the ring must not stall on them); an all-unknown ring is a no-op
+# after one lap rather than an infinite loop. `cols` is normalised to the
+# canonical `columns` so it matches what mark_layout writes.
+layout_cycle() {
+	ring=$(get_tmux_option "@workdesk-cycle-ring" "grid columns rows")
+	cur=$(tmux show-option -wqv @workdesk-layout 2>/dev/null || true)
+
+	norm=""
+	for x in $ring; do
+		[ "$x" = "cols" ] && x="columns"
+		norm="$norm $x"
+	done
+	# shellcheck disable=SC2086
+	set -- $norm
+	[ "$#" -eq 0 ] && return 0
+	n=$#
+
+	# index of cur among the entries (1-based; 0 = not present -> start at head).
+	idx=0
+	i=0
+	for x in "$@"; do
+		i=$((i + 1))
+		[ "$x" = "$cur" ] && idx=$i
+	done
+
+	# walk forward from idx, wrapping, applying the first entry that is a known
+	# layout; give up after a full lap so an all-unknown ring can't loop forever.
+	step=0
+	while [ "$step" -lt "$n" ]; do
+		step=$((step + 1))
+		pos=$(((idx + step - 1) % n + 1))
+		j=0
+		for x in "$@"; do
+			j=$((j + 1))
+			if [ "$j" -eq "$pos" ]; then
+				apply_named "$x" && return 0
+				break
+			fi
+		done
+	done
+	return 0
 }
 
 # menu — the layout chooser (also installed as the prefix binding).
