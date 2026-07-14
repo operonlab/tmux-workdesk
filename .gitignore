@@ -10,3 +10,9 @@
 # Demo build intermediates (vhs raw capture pre-overlay; agent runtime state)
 docs/demo-raw.gif
 .omx/
+
+# Python bytecode from docs/keycast-bezel.py
+docs/__pycache__/
+
+# Local worktrees
+.worktrees/
