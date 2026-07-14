@@ -1,29 +1,36 @@
 # tmux-workdesk（繁體中文說明）
 
-一個 tmux 的**版面切換器**。按一個鍵開啟一個小選單，幫視窗挑一個版面——2×2 grid、
-等寬的 columns、左大右三疊的 split，或是 IDE 式的四格形狀。重點是版面本身；
-pane 裡要跑什麼，你自己決定。
+一個 tmux 的**版面切換器**。每個版面各自綁一個 prefix 鍵——按下去，視窗就照它
+重新排列。預設不經過任何選單：`prefix + i` 開 IDE 版面、`prefix + g` 開 2×2
+grid，以此類推。重點是版面本身；pane 裡要跑什麼，你自己決定。
 
-![tmux-workdesk 版面選單——IDE 版面、2×2 grid、Columns、Left │ 3-stack](screenshot.png)
+![tmux-workdesk 的版面——IDE 版面、2×2 grid、Columns、Left │ 3-stack](screenshot.png)
 
-*一次 `prefix + i` 開啟選單；挑一個版面，目前視窗就照它重新排列。*
+*每個版面都只差一個 prefix 鍵：`prefix + i` 開啟 IDE 版面，`prefix + g` 把目前視窗排成 2×2 grid。*
 
 ## 這是什麼？
 
 tmux 本來就能用 `prefix + Space` 循環內建版面，但那些版面是泛用、沒有名字的。
-tmux-workdesk 給你一個**你真正會用到的版面、有名字的選單**，一個按鍵、套用在
-目前視窗上：
+tmux-workdesk 給你**每個有名字的版面各自一個 prefix 鍵**，套用在目前視窗上
+（IDE 版面則是專屬視窗）：
 
 - **IDE 版面**——四格形狀：一個窄的左側邊欄、一個主工作區、下方一條 strip，
   還有一個右欄。預設是**純 shell**——想要的話可以把各格指到你自己的工具
-  （見下面）。開啟時是專屬的 `ide` 視窗，之後可以切回去。
+  （見下面）。開啟時是專屬的 `ide` 視窗，之後可以切回去；它是獨立的工作區，
+  不屬於下面的幾何版面循環。
 - **2×2 grid**——四格等大、tiled 排列。
 - **Columns**——N 欄並排（預設 4 欄）。
 - **Left │ 3-stack**——左半邊是一個全高的 pane；右半邊分成三格堆疊。
+- **Cycle**（選用）——一個鍵讓目前視窗依序跳到下一個幾何版面（grid → columns
+  → l3 → grid），如果你比較想要「換下一個版面」而不是每個版面各自一個鍵。
 
-grid / columns / left │ 3-stack 這些幾何版面作用在**目前**視窗上：它們會先加入
-純 shell 的 pane，直到數量夠了，再套用排列。過程中不會殺掉任何 pane，所以你
-可以自由地在版面之間切換。
+**幾何版面**（grid / columns / left │ 3-stack）作用在**目前**視窗上：它們會先
+加入純 shell 的 pane，直到數量夠了，再套用排列。過程中不會殺掉任何 pane，所以
+同一批 pane 連同內容都會留著——幾何版面之間切換是無縫的。IDE 版面不一樣：它會
+開一個專屬視窗，不屬於那個切換循環。
+
+另外還有一個列出所有版面的彈出式選單——它是**選用**的（需要 tmux 3.0+），不是
+預設的操作入口；細節見下面的〈選項〉。
 
 ```
    IDE layout            2×2 grid           Columns          Left │ 3-stack
@@ -109,22 +116,27 @@ tmux source ~/.tmux.conf
 ### 試玩
 
 1. `cd` 進一個專案，開啟（或 attach）tmux。
-2. 按 **`prefix + i`**（小寫 i）→ 版面選單開啟。
-3. 用高亮的按鍵挑一個版面：
-   - **`i`** — IDE 版面（開一個新的 `ide` 視窗；之後從任何地方再按 `prefix + i`
-     接著按 `i`，會直接跳回去——不會重建），
-   - **`g`** — 2×2 grid，**`c`** — columns，**`l`** — left │ 3-stack
-     （這些會重新排列目前視窗）。
+2. 按 **`prefix + i`** → IDE 版面開啟成一個新的 `ide` 視窗。之後從任何地方再按
+   一次，會直接跳回那個視窗——不會重建。
+3. 按 **`prefix + g`** → 目前視窗排成 2×2 grid。
 
-> **想要一鍵直達 IDE 版面？** 設定 `@workdesk-menu 'off'`，`prefix + i` 就會跳過
-> 選單，直接切換 IDE 版面（回到 pre-menu 的行為）。
->
-> **注意：** 預設 `prefix + i` 會**覆蓋 tmux 內建的按鍵**（一段視窗資訊訊息）。
-> 如果你需要那個功能，用 `@workdesk-bind` 改綁到別的鍵。
+Columns、left │ 3-stack、cycle、彈出式選單預設都沒有綁鍵——自己挑一個空鍵綁
+（見下面〈選項〉）：
+
+```tmux
+set -g @workdesk-columns-bind 'e'
+set -g @workdesk-l3-bind      'a'
+set -g @workdesk-cycle-bind   'b'
+```
+
+> **注意：** 預設 `prefix + i` 會**覆蓋 tmux 內建的 `display-message` 按鍵**
+> （一段單行的 pane 資訊訊息）。`prefix + g` 不會覆蓋任何東西——tmux 本來就
+> 沒有預設綁這個鍵。如果你需要那段內建訊息，把 `@workdesk-ide-bind` 設成
+> `none` 或改綁別的鍵。
 
 ## Demo
 
-![tmux-workdesk demo — prefix + i 開啟版面選單；挑一個版面就會重新排列視窗](demo.gif)
+![tmux-workdesk demo — prefix + i 開啟 IDE 版面；prefix + g 把視窗排成 2×2 grid](demo.gif)
 
 ## 選項
 
@@ -132,8 +144,12 @@ tmux source ~/.tmux.conf
 
 | 選項 | 預設 | 白話說明 |
 |---|---|---|
-| `@workdesk-bind` | `i` | 開啟版面選單的按鍵（接在 prefix 之後）。設成 `none` 可停用綁定。**會覆蓋內建的 `prefix + i`。** |
-| `@workdesk-menu` | `on` | `on` = 按鍵開啟版面選單。`off` = 按鍵直接切換 IDE 版面，不經過選單。 |
+| `@workdesk-ide-bind` | `i` | 開啟／切回 IDE 版面的按鍵（接在 prefix 之後）。設成 `none` 可停用。**會覆蓋 tmux 內建的 `display-message` 按鍵。** |
+| `@workdesk-grid-bind` | `g` | 把目前視窗排成 2×2 grid 的按鍵。設成 `none` 可停用。 |
+| `@workdesk-columns-bind` | `none` | 把目前視窗排成 **Columns** 的按鍵。預設不綁——它天然的助記鍵 `c` 是 tmux 自己的 `new-window`；自己挑一個空鍵。 |
+| `@workdesk-l3-bind` | `none` | 把目前視窗排成 **Left │ 3-stack** 的按鍵。預設不綁——助記鍵 `l` 是 tmux 自己的 `last-window`；自己挑一個空鍵。 |
+| `@workdesk-cycle-bind` | `none` | 選用的按鍵，讓目前視窗依序跳到下一個幾何版面（grid → columns → l3 → grid），取代每個版面各自一個鍵。 |
+| `@workdesk-menu-bind` | `none` | 選用的按鍵，開啟列出所有版面的彈出式 `display-menu`。**需要 tmux 3.0+**——預設不綁，讓外掛的核心路徑維持在 tmux 2.4 的底線上。 |
 | `@workdesk-columns-count` | `4` | **Columns** 版面產生的欄數（限制在 2–8）。 |
 | `@workdesk-window-name` | `ide` | IDE 版面視窗的名字。toggle 靠這個名字找它。 |
 | `@workdesk-cwd` | *(觸發 pane 的路徑)* | IDE 版面以哪個目錄為根。預設是你按鍵時所在的位置。 |
@@ -176,7 +192,7 @@ set -g @plugin 'operonlab/tmux-workdesk'
 
 ## 解除安裝
 
-跑內建的 teardown 腳本，解除按鍵綁定並關掉 IDE 視窗，然後刪掉資料夾：
+跑內建的 teardown 腳本，解除各版面的按鍵綁定並關掉 IDE 視窗，然後刪掉資料夾：
 
 ```sh
 ~/.tmux/plugins/tmux-workdesk/scripts/teardown.sh
@@ -192,9 +208,13 @@ rm -rf ~/.tmux/plugins/tmux-workdesk
 ## 常見問題
 
 **我按了 `prefix + i`，結果只跳出一段視窗資訊訊息。**
-那是 tmux 內建的 `prefix + i`——外掛的綁定還沒載入。重新載入設定
-（`tmux source ~/.tmux.conf`），若用 TPM 就按 `prefix + I`（大寫 i）安裝。
-tmux-workdesk 載入後，`prefix + i` 就會開啟選單。
+那是 tmux 內建的 `prefix + i`（`display-message`）——外掛的綁定還沒載入。
+重新載入設定（`tmux source ~/.tmux.conf`），若用 TPM 就按 `prefix + I`
+（大寫 i）安裝。tmux-workdesk 載入後，`prefix + i` 就會改開 IDE 版面。
+
+**我想要那個彈出式版面選單。**
+它是選用的——把 `@workdesk-menu-bind` 設成一個空鍵即可（需要 tmux 3.0+）。
+預設沒有選單，每個版面各自有自己的鍵。
 
 **grid/columns/left-stack 版面加了空的 shell pane。**
 這是設計如此——這些幾何版面會先加入純 shell 的 pane，直到數量夠了，再套用
@@ -223,7 +243,7 @@ tmux 每條 pane 邊界會吃掉一格，所以 200 欄視窗的 20% / ~50% / 30
 這些視窗和 pane 就像其他視窗一樣活在跑著的 server 裡，所以
 [tmux-resurrect](https://github.com/tmux-plugins/tmux-resurrect) 之類的設定可以
 把它們救回來——但 tmux-workdesk 本身不在硬碟上留任何狀態。單純重啟後，再按一次
-`prefix + i` 挑版面即可。
+該版面的鍵即可（IDE 是 `prefix + i`、grid 是 `prefix + g`，以此類推）。
 
 ## 藍圖（Roadmap）
 
