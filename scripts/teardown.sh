@@ -5,8 +5,7 @@
 # in every session where it exists. Safe to run more than once.
 #
 # WARNING: killing the IDE window closes every program running inside it
-# (yazi, your agent CLI, lazygit, and anything in the main pane). Save your
-# work first.
+# (anything you launched in its panes). Save your work first.
 
 set -u
 
