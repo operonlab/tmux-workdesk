@@ -2,11 +2,13 @@
 
 **Status: roadmap — not bundled in v0.1.**
 
-Out of the box, tmux-workdesk runs [yazi](https://github.com/sxyazi/yazi) in the left
-slot as a normal file manager: pressing Enter opens the highlighted file with
-yazi's own opener (usually `$EDITOR` *inside the yazi pane*). What most people
-actually want from an IDE layout is different: highlight a file on the left, and
-have it open in the **main workspace pane** in the centre.
+This recipe assumes you've opted the IDE layout's left slot into
+[yazi](https://github.com/sxyazi/yazi) (`set -g @workdesk-left-cmd 'yazi'` — yazi
+isn't tmux-workdesk's default, it's just one example tool for that slot). With
+yazi running there as a normal file manager, pressing Enter opens the highlighted
+file with yazi's own opener (usually `$EDITOR` *inside the yazi pane*). What most
+people actually want from an IDE layout is different: highlight a file on the
+left, and have it open in the **main workspace pane** in the centre.
 
 yazi can't move focus across tmux panes by itself, but it can run a shell
 command — and that command can be `tmux send-keys` aimed at the main pane. This
