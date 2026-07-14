@@ -1,47 +1,64 @@
 # tmux-workdesk（繁體中文說明）
 
-一個按鍵，把當前專案變成 **IDE 式的 tmux 視窗**——左邊檔案樹、中間主工作區、
-中下 git 面板、右邊 AI 助手。每一格的程式與尺寸都可以替換，任何一格也都能關掉。
+一個 tmux 的**版面切換器**。按一個鍵開啟一個小選單，幫視窗挑一個版面——2×2 grid、
+等寬的 columns、左大右三疊的 split，或是 IDE 式的四格形狀。重點是版面本身；
+pane 裡要跑什麼，你自己決定。
 
-![tmux-workdesk 按下按鍵後的樣子——四格 IDE 視窗：左邊 yazi 檔案樹、中間主工作區開著原始碼、中下 lazygit git 面板、右邊 AI 助手格](screenshot.png)
+![tmux-workdesk 版面選單——IDE 版面、2×2 grid、Columns、Left │ 3-stack](screenshot.png)
 
-*一次 `prefix + i`，把專案目錄變成這個四格版面——檔案 · 工作區疊 git · agent——全部以同一個目錄為根。*
+*一次 `prefix + i` 開啟選單；挑一個版面，目前視窗就照它重新排列。*
 
 ## 這是什麼？
 
-寫專案時，你通常想同時看到同一組東西：一個瀏覽檔案的地方、一個打字的地方、
-一個看 git 的地方，還有（近來）一個 AI 助手。每次手動擺出來——切、切、切、
-這格跑這個、那格跑那個——很煩。
+tmux 本來就能用 `prefix + Space` 循環內建版面，但那些版面是泛用、沒有名字的。
+tmux-workdesk 給你一個**你真正會用到的版面、有名字的選單**，一個按鍵、套用在
+目前視窗上：
 
-**tmux-workdesk** 一個鍵搞定。在任何專案目錄裡按 `prefix + i`，它就建出一個像 IDE 的
-專屬視窗：
+- **IDE 版面**——四格形狀：一個窄的左側邊欄、一個主工作區、下方一條 strip，
+  還有一個右欄。預設是**純 shell**——想要的話可以把各格指到你自己的工具
+  （見下面）。開啟時是專屬的 `ide` 視窗，之後可以切回去。
+- **2×2 grid**——四格等大、tiled 排列。
+- **Columns**——N 欄並排（預設 4 欄）。
+- **Left │ 3-stack**——左半邊是一個全高的 pane；右半邊分成三格堆疊。
+
+grid / columns / left │ 3-stack 這些幾何版面作用在**目前**視窗上：它們會先加入
+純 shell 的 pane，直到數量夠了，再套用排列。過程中不會殺掉任何 pane，所以你
+可以自由地在版面之間切換。
 
 ```
-+----------+-----------------------------+------------+
-|          |                             |            |
-|          |       主工作區               |            |
-|          |     （shell / 編輯器）        |            |
-|   yazi   |         高 70%              |   agent    |
-|  (檔案)   +-----------------------------+  (claude)  |
-| 寬 20%   |                             |  寬 30%    |
-| 全高     |     lazygit （git）          |  全高      |
-|          |         高 30%              |            |
-|          |       中央直欄               |            |
-+----------+-----------------------------+------------+
-    20%                ~50%                    30%
+   IDE layout            2×2 grid           Columns          Left │ 3-stack
++----+------+----+    +------+------+    +--+--+--+--+     +--------+--------+
+|    | main |    |    |      |      |    |  |  |  |  |     |        |   R1   |
+|    +------+    |    +------+------+    |  |  |  |  |     |   L    +--------+
+|    | strip|    |    |      |      |    |  |  |  |  |     |        |   R2   |
++----+------+----+    +------+------+    +--+--+--+--+     |        +--------+
+                                                          |        |   R3   |
+                                                          +--------+--------+
 ```
 
-- **左側、全高（20%）**——[yazi](https://github.com/sxyazi/yazi)，快速的終端檔案管理器。
-- **中央上方（中欄的 70%）**——主工作區：預設是純 shell，也可以設成編輯器。
-- **中央下方（中欄的 30%）**——[lazygit](https://github.com/jesseduffield/lazygit)，git TUI。
-- **右側、全高（30%）**——AI 助手 CLI（預設 `claude`，任何指令都行）。
+## IDE 版面——自己帶工具進來
 
-再按一次同一個鍵，它只會**切回**那個視窗——絕不會再建第二個。
+IDE 版面出廠時是那個形狀裡的**四個純 shell pane**。它不會啟動任何特定程式——
+外掛提供的是*形狀*本身。要把它變成你的 IDE，在 `~/.tmux.conf` 裡把每一格指到
+一個工具：
 
-> ⚠️ **這些格子會執行指令。** `@workdesk-left-cmd`、`@workdesk-right-cmd`、
-> `@workdesk-bottom-cmd`、`@workdesk-main-cmd` 會在建視窗時被執行。它們來自你自己的
-> `~/.tmux.conf`，但請比照你放進設定檔的任何指令一樣謹慎看待。若某個程式沒安裝，
-> 該格會安靜地改開一個 shell（並提示你）。
+```tmux
+# 範例——左邊放檔案管理器、strip 放 git TUI、右邊放 agent。
+# 這些工具只是示範；你可以用任何你喜歡的（或什麼都不放）。
+set -g @workdesk-left-cmd   'yazi'      # 終端檔案管理器
+set -g @workdesk-bottom-cmd 'lazygit'   # git TUI
+set -g @workdesk-right-cmd  'claude'    # AI 助手 CLI
+set -g @workdesk-main-cmd   'nvim'      # 主 pane 裡的編輯器
+```
+
+每個 `@workdesk-<slot>-cmd` 都是可選的：
+
+- **未設定或空字串** → 該格是純 shell（只有版面，沒有工具），
+- **一個指令** → 該格跑那個指令（沒裝的話，該格會退回 shell 並提示原因），
+- **`none`** → 丟棄該格，空間讓給鄰格。
+
+> ⚠️ **格子的指令會執行程式。** 它們來自你自己的 `~/.tmux.conf`，但請比照你放進
+> 設定檔的任何指令一樣謹慎看待。
 
 ## 快速上手
 
@@ -92,13 +109,22 @@ tmux source ~/.tmux.conf
 ### 試玩
 
 1. `cd` 進一個專案，開啟（或 attach）tmux。
-2. 按 **`prefix + i`**（小寫 i）→ 一個新的 `ide` 視窗會擺出四格佈局，
-   以那個專案目錄為根。
-3. 從任何地方再按 **`prefix + i`** → 直接跳回 `ide` 視窗（不會重建）。
+2. 按 **`prefix + i`**（小寫 i）→ 版面選單開啟。
+3. 用高亮的按鍵挑一個版面：
+   - **`i`** — IDE 版面（開一個新的 `ide` 視窗；之後從任何地方再按 `prefix + i`
+     接著按 `i`，會直接跳回去——不會重建），
+   - **`g`** — 2×2 grid，**`c`** — columns，**`l`** — left │ 3-stack
+     （這些會重新排列目前視窗）。
 
-> **注意：** 預設 `prefix + i` 會**覆蓋 tmux 內建的按鍵**——內建的是顯示一小段
-> 視窗資訊的訊息（`display-message`）。如果你需要那個功能，用下面的 `@workdesk-bind`
-> 把 tmux-workdesk 改綁到別的鍵。
+> **想要一鍵直達 IDE 版面？** 設定 `@workdesk-menu 'off'`，`prefix + i` 就會跳過
+> 選單，直接切換 IDE 版面（回到 pre-menu 的行為）。
+>
+> **注意：** 預設 `prefix + i` 會**覆蓋 tmux 內建的按鍵**（一段視窗資訊訊息）。
+> 如果你需要那個功能，用 `@workdesk-bind` 改綁到別的鍵。
+
+## Demo
+
+![tmux-workdesk demo — prefix + i 開啟版面選單；挑一個版面就會重新排列視窗](demo.gif)
 
 ## 選項
 
@@ -106,24 +132,28 @@ tmux source ~/.tmux.conf
 
 | 選項 | 預設 | 白話說明 |
 |---|---|---|
-| `@workdesk-bind` | `i` | 切換 IDE 視窗的按鍵（接在 prefix 之後）。設成 `none` 可停用。**會覆蓋內建的 `prefix + i`。** |
-| `@workdesk-window-name` | `ide` | IDE 視窗的名字。toggle 靠這個名字找它。 |
-| `@workdesk-cwd` | *(觸發 pane 的路徑)* | 佈局以哪個目錄為根。預設是你按鍵時所在的位置。 |
-| `@workdesk-left-cmd` | `yazi` | 左側（檔案樹）格的指令。空字串 = 跳過這格。 |
-| `@workdesk-right-cmd` | `claude` | 右側（AI 助手）格的指令。空字串 = 跳過。 |
-| `@workdesk-bottom-cmd` | `lazygit` | 中央下方（git）格的指令。空字串 = 跳過。 |
-| `@workdesk-main-cmd` | *(空 → shell)* | 主工作區的指令。留空就是純 shell。 |
-| `@workdesk-left-width` | `20` | 左格寬度，佔**整個視窗**的百分比。 |
-| `@workdesk-right-width` | `30` | 右格寬度，佔**整個視窗**的百分比。 |
-| `@workdesk-bottom-height` | `30` | git 面板高度，佔**整個視窗**的百分比（即中欄高度，中欄本身是視窗全高）。 |
-| `@workdesk-right-bottom-cmd` | *(空)* | 右欄的第二個指令，疊在右格**下方**（例如上面檔案樹、下面 agent）。留空＝右欄維持一格。 |
+| `@workdesk-bind` | `i` | 開啟版面選單的按鍵（接在 prefix 之後）。設成 `none` 可停用綁定。**會覆蓋內建的 `prefix + i`。** |
+| `@workdesk-menu` | `on` | `on` = 按鍵開啟版面選單。`off` = 按鍵直接切換 IDE 版面，不經過選單。 |
+| `@workdesk-columns-count` | `4` | **Columns** 版面產生的欄數（限制在 2–8）。 |
+| `@workdesk-window-name` | `ide` | IDE 版面視窗的名字。toggle 靠這個名字找它。 |
+| `@workdesk-cwd` | *(觸發 pane 的路徑)* | IDE 版面以哪個目錄為根。預設是你按鍵時所在的位置。 |
+| `@workdesk-main-cmd` | *(空 → shell)* | IDE 主工作區的指令。留空是純 shell。 |
+| `@workdesk-left-cmd` | *(空 → shell)* | IDE 左格的指令。空字串 = 純 shell；`none` = 丟棄該格。 |
+| `@workdesk-right-cmd` | *(空 → shell)* | IDE 右格的指令。空字串 = 純 shell；`none` = 丟棄該格。 |
+| `@workdesk-bottom-cmd` | *(空 → shell)* | IDE 中下 strip 格的指令。空字串 = 純 shell；`none` = 丟棄該格。 |
+| `@workdesk-left-width` | `20` | IDE 左格寬度，佔**整個視窗**的百分比。 |
+| `@workdesk-right-width` | `30` | IDE 右格寬度，佔**整個視窗**的百分比。 |
+| `@workdesk-bottom-height` | `30` | IDE strip 高度，佔**整個視窗**的百分比。 |
+| `@workdesk-right-bottom-cmd` | *(空)* | 疊在 IDE 右格**下方**的第二個指令（可選）。留空 = 右欄維持一格。 |
 | `@workdesk-right-bottom-height` | `50` | 右欄第二格的高度，佔**整個視窗**的百分比。 |
 
-本外掛建立的視窗都帶著 window option `@workdesk-window 1`。如果你有自己的
-自動排版／rebalance hook，請檢查這個標記並跳過這些視窗——它們的
-pane 比例是刻意排的。
+本外掛建立的每個 IDE 版面視窗都帶著 window option `@workdesk-window 1`。如果你有
+自己的自動排版／rebalance hook，請檢查這個標記並跳過這些視窗——它們的 pane
+比例是刻意排的。
 
-範例——左邊整條 git 面板、右邊上檔案樹下 agent（三格；*main* 槽就是右上那格）：
+### 更多 IDE 版面範例
+
+左邊整條 git 面板、右邊上檔案樹疊 agent（*main* 格變成右上那格）：
 
 ```tmux
 set -g @workdesk-left-cmd 'lazygit'
@@ -131,23 +161,15 @@ set -g @workdesk-left-width '33'
 set -g @workdesk-main-cmd 'yazi'
 set -g @workdesk-bottom-cmd 'claude'
 set -g @workdesk-bottom-height '40'
-set -g @workdesk-right-cmd ''
+set -g @workdesk-right-cmd 'none'
 ```
 
-範例——主 pane 放 nvim、換另一個 agent、加寬側欄、把鍵改到 `g`：
+不要 AI 格——只要檔案 + 編輯器 + git：
 
 ```tmux
-set -g @workdesk-bind 'g'
-set -g @workdesk-main-cmd 'nvim'
-set -g @workdesk-right-cmd 'codex'
-set -g @workdesk-left-width '25'
-set -g @plugin 'operonlab/tmux-workdesk'
-```
-
-範例——不要 AI 格，只要 檔案 + 編輯器 + git：
-
-```tmux
-set -g @workdesk-right-cmd ''
+set -g @workdesk-right-cmd 'none'
+set -g @workdesk-left-cmd 'yazi'
+set -g @workdesk-bottom-cmd 'lazygit'
 set -g @workdesk-main-cmd 'nvim'
 set -g @plugin 'operonlab/tmux-workdesk'
 ```
@@ -161,8 +183,8 @@ set -g @plugin 'operonlab/tmux-workdesk'
 rm -rf ~/.tmux/plugins/tmux-workdesk
 ```
 
-> ⚠️ teardown 會**殺掉 `ide` 視窗**，連帶關閉裡面所有在跑的東西（yazi、你的
-> agent、lazygit、主 pane）。請先存好你的工作。
+> ⚠️ teardown 會**殺掉 `ide` 視窗**，連帶關閉裡面所有在跑的東西。請先存好你的
+> 工作。
 
 （如果你用 TPM 安裝，也把 `~/.tmux.conf` 裡的 `set -g @plugin '.../tmux-workdesk'`
 那行移除。）
@@ -172,59 +194,56 @@ rm -rf ~/.tmux/plugins/tmux-workdesk
 **我按了 `prefix + i`，結果只跳出一段視窗資訊訊息。**
 那是 tmux 內建的 `prefix + i`——外掛的綁定還沒載入。重新載入設定
 （`tmux source ~/.tmux.conf`），若用 TPM 就按 `prefix + I`（大寫 i）安裝。
-tmux-workdesk 載入後，`prefix + i` 就會改成建佈局。
+tmux-workdesk 載入後，`prefix + i` 就會開啟選單。
 
-**某一格開成了純 shell，而不是我預期的程式。**
-那格的指令不在 tmux 啟動時環境的 `PATH` 上。tmux-workdesk 會檢查每個 `*-cmd` 的
-第一個字，找不到就在那格開 shell，並印出 `workdesk: <cmd> not found, slot left as shell`。
-把工具裝好（yazi / lazygit / 你的 agent CLI），或把選項指到正確的執行檔。
+**grid/columns/left-stack 版面加了空的 shell pane。**
+這是設計如此——這些幾何版面會先加入純 shell 的 pane，直到數量夠了，再套用
+排列。新 pane 裡想跑什麼都行。
 
-**某格什麼都沒有／我想要少一點 pane。**
-把那格的指令設成空字串（例如 `set -g @workdesk-right-cmd ''`）。該次 split 會被跳過，
-空間讓給鄰格。
+**某個 IDE 格開成了純 shell，而不是我預期的程式。**
+那格的指令不在 tmux 啟動時環境的 `PATH` 上。tmux-workdesk 會檢查每個 `*-cmd`
+的第一個字，找不到就在那格開 shell，並印出
+`workdesk: <cmd> not found, slot left as shell`。把工具裝好，或把選項指到
+正確的執行檔。
 
-**再按一次鍵又開了一個 IDE 視窗——或者沒反應。**
-它不該建第二個：toggle 會找名為 `@workdesk-window-name`（預設 `ide`）的視窗，有就切
-過去。如果你手動改了 IDE 視窗的名字，tmux-workdesk 就找不到它、會重建一個新的——把
-`@workdesk-window-name` 改成一致，或別去改名。
+**我想要少一點 IDE pane。**
+把那格的指令設成 `none`（例如 `set -g @workdesk-right-cmd 'none'`）。
+該次 split 會被跳過，空間讓給鄰格。
+
+**再按一次 IDE 鍵又開了一個視窗——或者沒反應。**
+它不該建第二個：toggle 會找名為 `@workdesk-window-name`（預設 `ide`）的視窗，
+有就切過去。如果你手動改了 IDE 視窗的名字，tmux-workdesk 就找不到它、會重建
+一個新的——把 `@workdesk-window-name` 改成一致，或別去改名。
 
 **比例看起來差了一兩格。**
 tmux 每條 pane 邊界會吃掉一格，所以 200 欄視窗的 20% / ~50% / 30% 會落在
 40 / 98 / 60 欄（少掉的兩欄就是邊界）。這是正常的。
 
 **佈局能撐過 tmux server 重啟嗎？**
-這個視窗和它的 pane 就像其他視窗一樣活在跑著的 server 裡，所以
+這些視窗和 pane 就像其他視窗一樣活在跑著的 server 裡，所以
 [tmux-resurrect](https://github.com/tmux-plugins/tmux-resurrect) 之類的設定可以
 把它們救回來——但 tmux-workdesk 本身不在硬碟上留任何狀態。單純重啟後，再按一次
-`prefix + i` 重建即可。
+`prefix + i` 挑版面即可。
 
 ## 藍圖（Roadmap）
 
-- **yazi → 主 pane**：把 yazi 選中的檔案直接開進主工作區。做法（yazi opener 設定
-  ＋ 一段 `tmux send-keys` 橋接）寫在
-  [docs/yazi-integration.md](yazi-integration.md)；**v0.1 不內建**。
+- **yazi → 主 pane**：如果你把 IDE 左格指到 yazi，就可以把 yazi 選中的檔案直接
+  開進主工作區。做法（yazi opener 設定 ＋ 一段 `tmux send-keys` 橋接）寫在
+  [docs/yazi-integration.md](yazi-integration.md)；**不內建**。
 
 ## 為什麼不叫 `tmux-ide`？
 
-這個外掛開發期間短暫叫過 `tmux-ide`，但這名字已有好幾個彼此無關的專案各自取用——
-其中最接近的是 [guysoft/tmux-ide](https://github.com/guysoft/tmux-ide)
-（`nvim + opencode` 的三格佈局，並把 nvim 的 RPC socket 暴露出來給 agent 做除錯），
-另外還有 [wavyrai/tmux-ide](https://github.com/wavyrai/tmux-ide) 與
-[sandeeprenjith/TMUX-IDE](https://github.com/sandeeprenjith/TMUX-IDE)。
-與其擠進一個已經很擠的名字，本專案在首次發布前改名為 **tmux-workdesk**，
-與上述任何一個專案都沒有關聯。
+這個外掛開發期間短暫叫過 `tmux-ide`，但這名字已被好幾個彼此無關的專案取用——
+最主要的是 [guysoft/tmux-ide](https://github.com/guysoft/tmux-ide)，另外還有
+[wavyrai/tmux-ide](https://github.com/wavyrai/tmux-ide) 與
+[sandeeprenjith/TMUX-IDE](https://github.com/sandeeprenjith/TMUX-IDE)。與其擠進
+一個已經很擠的名字，本專案在首次發布前改名為 **tmux-workdesk**，與上述任何一個
+專案都沒有關聯。
 
-與最接近的 guysoft/tmux-ide 的差異：
-
-- **四格，而非三格**——左側多一個全高的檔案管理器（yazi），主 pane 下方多一個
-  獨立的 git 面板（lazygit），對比 guysoft 的 editor + agent + terminal。
-- **不綁編輯器**——主 pane 預設純 shell（要用編輯器就把 `@workdesk-main-cmd` 指過去）；
-  沒有 nvim 耦合，也沒有 RPC socket。
-- **預設不同**——這裡是 yazi / claude / lazygit，那邊是 nvim / opencode。
-- **tmux 2.4 起跳**——尺寸換算成絕對格數，佈局不受 split 順序影響，也不需要新版
-  的百分比語法。
-
-改名的附帶好處：選項前綴不再相撞——本外掛讀 `@workdesk-*`、guysoft 讀 `@ide-*`——同時啟用也不會互相干擾。
+它也是不同性質的工具：guysoft/tmux-ide 是固定的 `nvim + opencode` IDE，附帶
+nvim RPC socket 給 agent 驅動除錯；tmux-workdesk 是一個**版面切換器**——IDE 形狀
+只是其中一種版面，本身不啟動任何工具，選項也放在 `@workdesk-*`（相對 guysoft 的
+`@ide-*`），所以兩者同時啟用不會互相干擾。
 
 ## 致謝 / 授權
 
