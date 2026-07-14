@@ -4,6 +4,33 @@ All notable changes to tmux-workdesk are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **Layout menu** (`prefix + i`, `display-menu`-based): opens a chooser for
+  **IDE layout** (`i`), **2×2 grid** (`g`), **Columns** (`c`), and
+  **Left │ 3-stack** (`l`). New option `@workdesk-menu` (default `on`) —
+  set to `off` to skip the menu and have the key toggle the IDE layout
+  directly, as before.
+- **Geometry layouts** for the *current* window: **2×2 grid**, **Columns**
+  (count via new option `@workdesk-columns-count`, default `4`, clamped
+  2–8), and **Left │ 3-stack** (left half full-height, right half split
+  into three stacked panes). These add plain-shell panes until the layout
+  has enough, then apply a native tmux layout — panes are only ever added,
+  never killed, so a preset can be switched freely.
+
+### Changed
+
+- **BREAKING: the IDE layout no longer launches yazi/lazygit/claude by
+  default.** All four slots ship as plain shells; tools are opt-in via
+  `@workdesk-<slot>-cmd` (`@workdesk-left-cmd`, `@workdesk-main-cmd`,
+  `@workdesk-bottom-cmd`, `@workdesk-right-cmd`). The plugin ships the
+  *shape*, not a toolset.
+- **BREAKING: empty slot-command semantics flipped.** An unset or empty
+  `@workdesk-<slot>-cmd` now means "plain shell" (previously it meant
+  "skip this slot"). To skip a slot, set its command to `none`.
+
 ## [0.3.0] - 2026-07-13
 
 ### Changed
