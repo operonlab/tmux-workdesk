@@ -1,12 +1,21 @@
 # Demo recording
 
-`docs/demo.gif` is referenced by the README but not yet committed.
+`docs/demo.gif` shows `prefix + i` opening the layout menu and picking a
+layout — the IDE layout is one of the choices, built as plain shells; picking
+it again from another window jumps straight back without rebuilding.
 
-To record it (requires [vhs](https://github.com/charmbracelet/vhs)):
+It's produced by an automated, self-contained pipeline (requires
+[vhs](https://github.com/charmbracelet/vhs)) instead of a manual recording:
 
-1. `cd` into a sample project (ideally one with yazi, lazygit, and an agent CLI
-   installed so every slot shows a real program).
-2. Record `prefix + i` (build the IDE layout), pause so the four slots are
-   visible, then move focus around and press `prefix + i` again from another
-   window to show it switching back (not rebuilding).
-3. Export as `docs/demo.gif` and commit.
+1. `docs/demo-setup.sh` stages an anonymous sample project and starts an
+   isolated, cockpit-themed tmux server (socket `wd-demo`) — your real tmux
+   server and config are never touched.
+2. `vhs docs/demo.tape` records the session against that server.
+3. `bash docs/demo-overlay.sh` composites KeyCastr-style key-bezel overlays
+   onto the raw capture and writes the final `docs/demo.gif`.
+
+Re-record from the repo root with:
+
+```sh
+vhs docs/demo.tape && bash docs/demo-overlay.sh
+```
