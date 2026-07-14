@@ -1,9 +1,15 @@
 #!/usr/bin/env bash
 # workdesk.tmux — TPM entry point for tmux-workdesk.
 #
-# TPM sources this file once at tmux start. It reads the user's @workdesk-bind
-# option and installs the prefix-table key binding that opens the layout menu
-# (IDE scaffold + pane-level geometry presets).
+# TPM sources this file once at tmux start. It installs one prefix-table key
+# binding per layout — each key runs a layout directly (no menu), so the plugin
+# stays pure `bind-key … run-shell` and works on tmux 2.4+ (the display-menu
+# chooser needs 3.0+, so it is opt-in only, see @workdesk-menu-bind below).
+#
+# Every binding is a @workdesk-<layout>-bind option; set any to "none" to skip
+# it. Defaults bind only the two keys that don't clobber a core tmux binding
+# (i, g); columns and l3 default to "none" because their mnemonic keys (c, l)
+# are tmux's own new-window / last-window — bind them to a free key you like.
 
 CURRENT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=scripts/helpers.sh
@@ -11,20 +17,23 @@ CURRENT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 WORKDESK_SCRIPT="${CURRENT_DIR}/scripts/workdesk.sh"
 
-bind_key=$(get_tmux_option "@workdesk-bind" "i")
+# bind_layout <key> <layout> — bind one prefix key to run a layout, unless the
+# key is "none".
+bind_layout() {
+	[ "$1" = "none" ] && return 0
+	tmux bind-key -T prefix "$1" run-shell "'${WORKDESK_SCRIPT}' $2"
+}
 
-# The prefix binding opens the layout chooser. Setting @workdesk-bind to "none"
-# disables it. @workdesk-menu can be set to "off" to bind the IDE toggle
-# directly (the pre-menu behaviour) instead of opening the chooser.
-menu_mode=$(get_tmux_option "@workdesk-menu" "on")
-if [ "$bind_key" != "none" ]; then
-	if [ "$menu_mode" = "off" ]; then
-		tmux bind-key -T prefix "$bind_key" run-shell "'${WORKDESK_SCRIPT}' ide"
-	else
-		tmux bind-key -T prefix "$bind_key" run-shell "'${WORKDESK_SCRIPT}' menu"
-	fi
-fi
+bind_layout "$(get_tmux_option "@workdesk-ide-bind" "i")"      ide
+bind_layout "$(get_tmux_option "@workdesk-grid-bind" "g")"     grid
+bind_layout "$(get_tmux_option "@workdesk-columns-bind" "none")" columns
+bind_layout "$(get_tmux_option "@workdesk-l3-bind" "none")"    l3
 
-# The single bind above is the only side effect; make sure a false test never
+# Opt-in chooser (needs tmux 3.0+ for display-menu). Off by default so the
+# plugin's default path stays on the tmux 2.4 floor. Set @workdesk-menu-bind to
+# a key to bind a single menu of every layout.
+bind_layout "$(get_tmux_option "@workdesk-menu-bind" "none")"  menu
+
+# The binds above are the only side effects; make sure a false test never
 # leaks out as exit 1 (which tmux would print as a scary "returned 1").
 exit 0

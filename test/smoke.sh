@@ -179,9 +179,10 @@ tmux -L "$F" -f /dev/null new-session -d -s work -x 200 -y 50
 inert_slots "$F"
 tmux -L "$F" run-shell "'${REPO_DIR}/workdesk.tmux'"
 sleep 0.2
-# the entrypoint binds the key to the layout menu (default @workdesk-menu=on).
+# the entrypoint binds one prefix key per layout; defaults bind i (ide) + g
+# (grid), so two workdesk binds are installed.
 bound=$(tmux -L "$F" list-keys -T prefix 2>/dev/null | grep -c 'workdesk.sh')
-check "prefix key bound after workdesk.tmux" "1" "$bound"
+check "layout keys bound after workdesk.tmux (i + g)" "2" "$bound"
 # build a window, then tear down
 tmux -L "$F" run-shell "'${IDE}' toggle"
 sleep 0.3

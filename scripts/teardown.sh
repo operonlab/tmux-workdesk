@@ -13,12 +13,20 @@ CURRENT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=scripts/helpers.sh
 . "${CURRENT_DIR}/helpers.sh"
 
-bind_key=$(get_tmux_option "@workdesk-bind" "i")
 win_name=$(get_tmux_option "@workdesk-window-name" "ide")
 
-if [ "$bind_key" != "none" ]; then
-	tmux unbind-key -T prefix "$bind_key" 2>/dev/null || true
-fi
+# Unbind every per-layout key (same defaults as workdesk.tmux). A key set to
+# "none" was never bound, so skip it.
+for opt_default in \
+	"@workdesk-ide-bind:i" \
+	"@workdesk-grid-bind:g" \
+	"@workdesk-columns-bind:none" \
+	"@workdesk-l3-bind:none" \
+	"@workdesk-menu-bind:none"; do
+	key=$(get_tmux_option "${opt_default%%:*}" "${opt_default##*:}")
+	[ "$key" = "none" ] && continue
+	tmux unbind-key -T prefix "$key" 2>/dev/null || true
+done
 
 # Kill every window named "$win_name" across all sessions. The name match is
 # done inside the tmux format (#{==:...}, tmux 2.4+) so window names containing
