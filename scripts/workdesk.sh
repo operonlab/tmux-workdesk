@@ -10,18 +10,21 @@
 #   * It does not exist  ->  build the layout rooted at @workdesk-cwd (default: the
 #     triggering pane's current path).
 #
-# Layout (default four slots):
+# Layout — the "ide" shape (four slots). Every slot is a PLAIN SHELL by default:
+# the plugin ships the SHAPE, not any particular tool.
 #
 #   +--------+---------------------+----------+
 #   |        |   main  (70% high)  |          |
-#   |  yazi  +---------------------+  agent   |
-#   | (20% w)|  lazygit (30% high) | (30% w)  |
+#   |  left  +---------------------+  right   |
+#   | (20% w)|  bottom (30% high)  | (30% w)  |
 #   | full h |   central column    |  full h  |
 #   +--------+---------------------+----------+
 #      20%           ~50%              30%
 #
-# Each slot's command and size is a @workdesk-* option (see README). A slot whose
-# option is set empty is skipped — the neighbouring pane keeps that space.
+# Each slot's size is a @workdesk-* option (see README). Point a slot at a tool
+# with @workdesk-<slot>-cmd — e.g. a file manager on the left, a git TUI in the
+# bottom, an agent CLI on the right. Those are EXAMPLES, not defaults. Set a
+# slot's -cmd to "none" to drop it (the neighbour keeps that space).
 #
 # Sizing note: the width/height options are percentages OF THE WHOLE WINDOW.
 # They are converted to absolute cell counts from #{window_width}/#{window_height}
@@ -70,13 +73,16 @@ msg() {
 }
 
 # split_slot <left|right|bottom> <size-cells> <command>
-# Carves one slot off the main pane. Empty command = skip (neighbour keeps the
-# space). Missing command = open a shell there and say so.
+# Carves one slot off the main pane. The command is OPTIONAL — the LAYOUT is the
+# point, not the tool:
+#   ""      -> a plain shell pane (the default: build the shape, launch nothing)
+#   "none"  -> skip this slot (the neighbour keeps the space)
+#   <cmd>   -> run it (falling back to a shell + a notice if it isn't installed)
 split_slot() {
 	dir="$1"
 	size="$2"
 	cmd="$3"
-	[ -z "$cmd" ] && return 0
+	[ "$cmd" = "none" ] && return 0
 	[ "${size:-0}" -lt 1 ] && return 0
 
 	flags=()
@@ -87,7 +93,9 @@ split_slot() {
 	*) return 0 ;;
 	esac
 
-	if rcmd=$(resolve_first "$cmd"); then
+	if [ -z "$cmd" ]; then
+		tmux split-window "${flags[@]}" -l "$size" -t "$MAIN" -c "$CWD" -P -F '#{pane_id}' 2>/dev/null || true
+	elif rcmd=$(resolve_first "$cmd"); then
 		tmux split-window "${flags[@]}" -l "$size" -t "$MAIN" -c "$CWD" -P -F '#{pane_id}' "$rcmd" 2>/dev/null || true
 	else
 		tmux split-window "${flags[@]}" -l "$size" -t "$MAIN" -c "$CWD" -P -F '#{pane_id}' 2>/dev/null || true
@@ -189,9 +197,11 @@ workdesk_toggle() {
 	# ── carve the slots off main, in order: left, right, bottom ──
 	# get_slot_cmd (not get_tmux_option): an option explicitly set to "" means
 	# "skip this slot" and must NOT fall back to the default command.
-	split_slot left "$left_cells" "$(get_slot_cmd "@workdesk-left-cmd" "yazi")" >/dev/null
-	RIGHT=$(split_slot right "$right_cells" "$(get_slot_cmd "@workdesk-right-cmd" "claude")")
-	split_slot bottom "$bottom_cells" "$(get_slot_cmd "@workdesk-bottom-cmd" "lazygit")" >/dev/null
+	# Slots default to plain shells — the plugin ships the SHAPE, not a toolset.
+	# Point a slot at a tool with @workdesk-<slot>-cmd; "none" drops the slot.
+	split_slot left "$left_cells" "$(get_slot_cmd "@workdesk-left-cmd" "")" >/dev/null
+	RIGHT=$(split_slot right "$right_cells" "$(get_slot_cmd "@workdesk-right-cmd" "")")
+	split_slot bottom "$bottom_cells" "$(get_slot_cmd "@workdesk-bottom-cmd" "")" >/dev/null
 
 	# ── optional second row in the right column (e.g. a file tree over an agent) ──
 	rb_cmd=$(get_slot_cmd "@workdesk-right-bottom-cmd" "")
@@ -282,7 +292,7 @@ layout_l3() {
 layout_menu() {
 	self="${CURRENT_DIR}/workdesk.sh"
 	tmux display-menu -T '#[align=centre]#[fg=#fab387] workdesk ' -x C -y C \
-		'IDE scaffold'    i "run-shell \"'${self}' ide\"" \
+		'IDE layout'      i "run-shell \"'${self}' ide\"" \
 		'' \
 		'2×2 grid'        g "run-shell \"'${self}' grid\"" \
 		'Columns'         c "run-shell \"'${self}' columns\"" \

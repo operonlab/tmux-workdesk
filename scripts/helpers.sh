@@ -20,10 +20,11 @@ get_tmux_option() {
 
 # get_slot_cmd <option-name> <default-value>
 # Like get_tmux_option, but distinguishes an option that is UNSET (→ default)
-# from one explicitly SET TO EMPTY (→ empty string, which the slot builder
-# treats as "skip this slot"). `show-option -gqv` returns empty for both cases,
-# so we detect an explicit set via `show-options -g` (an unset option prints no
-# line; a set-empty one prints `@name ''`).
+# from one explicitly SET TO EMPTY (→ empty string). The slot builder treats an
+# empty command as "a plain shell pane" and the literal "none" as "skip this
+# slot". `show-option -gqv` returns empty for both unset and set-empty, so we
+# detect an explicit set via `show-options -g` (an unset option prints no line;
+# a set-empty one prints `@name ''`).
 get_slot_cmd() {
 	if tmux show-options -g 2>/dev/null | grep -q "^$1 "; then
 		tmux show-option -gqv "$1" 2>/dev/null
