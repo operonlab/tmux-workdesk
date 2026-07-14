@@ -22,19 +22,53 @@ applied to the current window (or, for the IDE layout, a dedicated window):
   point the slots at your own tools if you want (see below). Opens as a dedicated
   `ide` window you toggle back to; it is a standalone workspace, not one of the
   geometry layouts below.
-- **2×2 grid** — four equal panes, tiled.
-- **Columns** — N even side-by-side columns (default 4).
-- **Left │ 3-stack** — the left half is one full-height pane; the right half is
-  split into three stacked panes.
-- **Cycle** *(optional)* — steps the current window through the geometry ring
-  (grid → columns → l3 → grid) on one key, if you'd rather have "next layout"
-  than a separate key per layout.
+- **Geometry layouts** — every one of these is a thin named alias over two
+  primitives:
+  - `tile X Y` — an X-by-Y tile of panes.
+  - `main {v|h} <pct> [n]` — one pane sized to `<pct>`% of the window (`v` =
+    left column, `h` = top row), the rest stacked beside/below it; `n` forces
+    the pane count (default 2).
 
-The **geometry layouts** (grid, columns, left │ 3-stack) work on your **current**
-window: they add plain-shell panes until the layout has enough, then arrange
-them. They never kill panes, so the same panes and their content carry over —
-switching between geometry layouts is seamless. The IDE layout is different: it
-opens its own dedicated window and isn't part of that switching ring.
+  | Preset | Primitive | Shape |
+  |---|---|---|
+  | **grid** | `tile 2 2` | four equal panes, tiled |
+  | **columns** | `tile N 1` (`@workdesk-columns-count`, default 4) | N even side-by-side columns |
+  | **rows** | `tile 1 N` (`@workdesk-rows-count`, default 3) | N even stacked rows, full width |
+  | **fleet** | `tile auto auto` | adaptive tiled grid over however many panes are already there — "watch many" |
+  | **lead** | `main v 50` | a 50%-wide lead pane on the left + the rest stacked on the right — the dominant-agent layout |
+  | **l3** / **left │ 3-stack** | `main v 50 4` | left half full-height + exactly 3 stacked panes on the right |
+  | **mainh** | `main h 60` | a 60%-tall main pane on top + a terminal strip below |
+  | **duo** | `tile 2 1` | two equal panes side by side |
+
+  `tile X Y` is exact for N×1 (columns), 1×N (rows), and 2×2 (grid, 4 panes); a
+  forced non-square N×M (e.g. `tile 3 2`) falls back to tmux's own `tiled`
+  arrangement (near-square) instead of an exact grid — an accepted v1 limit,
+  not a bug.
+
+  Named presets don't cover every shape — bind either primitive directly for
+  anything else:
+
+  ```tmux
+  bind-key -T prefix X run-shell "'~/.tmux/plugins/tmux-workdesk/scripts/workdesk.sh' tile 3 1"
+  bind-key -T prefix Y run-shell "'~/.tmux/plugins/tmux-workdesk/scripts/workdesk.sh' main v 70"
+  ```
+
+  Reaching for a shape: grids (**grid**/**fleet**) watch many panes at equal
+  weight; **lead** (a wide pane + stacked workers) is the go-to for driving an
+  agent team — one lead/orchestrator pane, the rest stacked as workers on the
+  right. **columns**/**rows**/**duo**/**mainh** cover the common even splits.
+- **Focus** — zoom the active pane (or restore it) with one key; the
+  "watch many, focus one" complement to the layouts above.
+- **Cycle** *(optional)* — steps the current window through a ring of layouts
+  read from `@workdesk-cycle-ring` (default `grid columns rows`) on one key, if
+  you'd rather have "next layout" than a separate key per layout.
+
+The **geometry layouts** (grid, columns, rows, fleet, lead, l3, mainh, duo) work
+on your **current** window: they add plain-shell panes until the layout has
+enough, then arrange them. They never kill panes, so the same panes and their
+content carry over — switching between geometry layouts is seamless. The IDE
+layout is different: it opens its own dedicated window and isn't part of that
+switching ring.
 
 A pop-up chooser menu also exists, listing every layout — it's **opt-in** (needs
 tmux 3.0+) rather than the default entry point; see [Options](#options) below.
@@ -49,6 +83,9 @@ tmux 3.0+) rather than the default entry point; see [Options](#options) below.
                                                           |        |   R3   |
                                                           +--------+--------+
 ```
+
+(Rows, fleet, lead, mainh, and duo follow the same `tile`/`main` shapes as the
+ones above — see the preset table.)
 
 ## The IDE layout — bring your own tools
 
@@ -130,12 +167,14 @@ that's fine, the setting just takes effect next time you start tmux.)
    rebuilt.
 3. Press **`prefix + g`** → the current window rearranges into a 2×2 grid.
 
-Columns, left │ 3-stack, cycle, and the pop-up menu have no default key — bind
-one yourself (see [Options](#options)):
+Every other layout — columns, rows, l3, lead, mainh, duo, fleet, focus, cycle,
+and the pop-up menu — has no default key; bind whichever ones you want (see
+[Options](#options)):
 
 ```tmux
 set -g @workdesk-columns-bind 'e'
 set -g @workdesk-l3-bind      'a'
+set -g @workdesk-lead-bind    'd'
 set -g @workdesk-cycle-bind   'b'
 ```
 
@@ -159,10 +198,18 @@ line. All are optional.
 | `@workdesk-ide-bind` | `i` | The key (after your prefix) that opens/returns to the IDE layout. Set to `none` to disable. **Overrides tmux's built-in `display-message` binding.** |
 | `@workdesk-grid-bind` | `g` | The key that rearranges the current window into a 2×2 grid. Set to `none` to disable. |
 | `@workdesk-columns-bind` | `none` | The key that rearranges the current window into **Columns**. Off by default — its natural mnemonic `c` is tmux's own `new-window`; pick a free key. |
+| `@workdesk-rows-bind` | `none` | The key that rearranges the current window into **Rows**. Off by default — pick a free key. |
 | `@workdesk-l3-bind` | `none` | The key that rearranges the current window into **Left │ 3-stack**. Off by default — its mnemonic `l` is tmux's own `last-window`; pick a free key. |
-| `@workdesk-cycle-bind` | `none` | Optional key that steps the current window through the geometry ring (grid → columns → l3 → grid), instead of a separate key per layout. |
+| `@workdesk-lead-bind` | `none` | The key that rearranges the current window into **Lead + stack** (a 50%-wide lead pane + stacked workers). Off by default — pick a free key. |
+| `@workdesk-mainh-bind` | `none` | The key that rearranges the current window into **Main + terminal** (a 60%-tall main pane over a strip). Off by default — pick a free key. |
+| `@workdesk-duo-bind` | `none` | The key that rearranges the current window into **Duo** (two equal panes side by side). Off by default — pick a free key. |
+| `@workdesk-fleet-bind` | `none` | The key that rearranges the current window into **Fleet** (an adaptive tiled grid over whatever panes already exist). Off by default — pick a free key. |
+| `@workdesk-focus-bind` | `none` | The key that zooms the active pane (press again to restore). Off by default — pick a free key. |
+| `@workdesk-cycle-bind` | `none` | Optional key that steps the current window through the ring read from `@workdesk-cycle-ring`, instead of a separate key per layout. |
 | `@workdesk-menu-bind` | `none` | Optional key that opens a pop-up `display-menu` listing every layout. **Needs tmux 3.0+** — off by default so the plugin's core path stays on the tmux 2.4 floor. |
 | `@workdesk-columns-count` | `4` | Number of columns the **Columns** layout produces (clamped 2–8). |
+| `@workdesk-rows-count` | `3` | Number of rows the **Rows** layout produces (clamped 2–8). |
+| `@workdesk-cycle-ring` | `grid columns rows` | Space-separated list of layout names `cycle` steps through, in order (wraps around; unknown names are skipped). |
 | `@workdesk-window-name` | `ide` | The name of the IDE-layout window. The toggle finds it by this name. |
 | `@workdesk-cwd` | *(triggering pane's path)* | The directory the IDE layout is rooted at. Defaults to wherever you pressed the key. |
 | `@workdesk-main-cmd` | *(empty → shell)* | Command for the IDE main workspace. Empty leaves a plain shell. |
@@ -232,7 +279,7 @@ use TPM, install with `prefix + I` (capital i). Once tmux-workdesk is loaded,
 It's opt-in — set `@workdesk-menu-bind` to a free key (needs tmux 3.0+). By
 default there's no menu; each layout has its own key instead.
 
-**A grid/columns/left-stack layout added empty shell panes.**
+**A geometry layout (grid/columns/rows/…) added empty shell panes.**
 That's by design — the geometry layouts add plain-shell panes until the layout
 has enough, then arrange them. Run whatever you like in the new panes.
 
