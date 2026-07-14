@@ -8,20 +8,33 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
-- **Layout menu** (`prefix + i`, `display-menu`-based): opens a chooser for
-  **IDE layout** (`i`), **2×2 grid** (`g`), **Columns** (`c`), and
-  **Left │ 3-stack** (`l`). New option `@workdesk-menu` (default `on`) —
-  set to `off` to skip the menu and have the key toggle the IDE layout
-  directly, as before.
+- **One prefix key per layout** — plain `bind-key -T prefix … run-shell`,
+  no menu involved, works on tmux 2.4+. New per-layout bind options:
+  `@workdesk-ide-bind` (default `i`), `@workdesk-grid-bind` (default `g`),
+  `@workdesk-columns-bind` (default `none`), `@workdesk-l3-bind` (default
+  `none`). Set any to `none` to skip that binding. Only `i`/`g` are bound
+  by default — `c`/`l` are tmux's own new-window/last-window mnemonics, so
+  columns/l3 are opt-in to whatever free key you like.
 - **Geometry layouts** for the *current* window: **2×2 grid**, **Columns**
   (count via new option `@workdesk-columns-count`, default `4`, clamped
   2–8), and **Left │ 3-stack** (left half full-height, right half split
   into three stacked panes). These add plain-shell panes until the layout
   has enough, then apply a native tmux layout — panes are only ever added,
-  never killed, so a preset can be switched freely.
+  never killed, so the same panes reflow in place and switching between
+  layouts is seamless.
+- **Cycle** (`@workdesk-cycle-bind`, default `none`): steps the current
+  window through the geometry ring (grid → columns → l3 → grid) on one
+  key, for "next layout" instead of a separate key per layout.
+- **Menu** (`@workdesk-menu-bind`, default `none`): opt-in `display-menu`
+  popup listing every layout. Needs tmux 3.0+ — off by default so the
+  plugin's core path stays on the tmux 2.4 floor.
 
 ### Changed
 
+- **BREAKING: `@workdesk-bind` and `@workdesk-menu` are gone.** Replaced by
+  the per-layout `@workdesk-<layout>-bind` options above — there is no
+  single option that toggles menu-vs-direct behaviour anymore, because
+  there is no menu-by-default behaviour to toggle.
 - **BREAKING: the IDE layout no longer launches yazi/lazygit/claude by
   default.** All four slots ship as plain shells; tools are opt-in via
   `@workdesk-<slot>-cmd` (`@workdesk-left-cmd`, `@workdesk-main-cmd`,
