@@ -18,16 +18,46 @@ tmux-workdesk 給你**每個有名字的版面各自一個 prefix 鍵**，套用
   還有一個右欄。預設是**純 shell**——想要的話可以把各格指到你自己的工具
   （見下面）。開啟時是專屬的 `ide` 視窗，之後可以切回去；它是獨立的工作區，
   不屬於下面的幾何版面循環。
-- **2×2 grid**——四格等大、tiled 排列。
-- **Columns**——N 欄並排（預設 4 欄）。
-- **Left │ 3-stack**——左半邊是一個全高的 pane；右半邊分成三格堆疊。
-- **Cycle**（選用）——一個鍵讓目前視窗依序跳到下一個幾何版面（grid → columns
-  → l3 → grid），如果你比較想要「換下一個版面」而不是每個版面各自一個鍵。
+- **幾何版面**——以下每一種都是套在兩個基本元件上的簡單命名別名：
+  - `tile X Y`——排出 X×Y 格 pane。
+  - `main {v|h} <pct> [n]`——一格 pane 佔視窗的 `<pct>`%（`v` = 靠左那欄、`h` =
+    靠上那列），其餘的堆在旁邊／下面；`n` 可強制 pane 數（預設 2）。
 
-**幾何版面**（grid / columns / left │ 3-stack）作用在**目前**視窗上：它們會先
-加入純 shell 的 pane，直到數量夠了，再套用排列。過程中不會殺掉任何 pane，所以
-同一批 pane 連同內容都會留著——幾何版面之間切換是無縫的。IDE 版面不一樣：它會
-開一個專屬視窗，不屬於那個切換循環。
+  | 版面 | 對應基本元件 | 形狀 |
+  |---|---|---|
+  | **grid** | `tile 2 2` | 四格等大、tiled |
+  | **columns** | `tile N 1`（`@workdesk-columns-count`，預設 4） | N 欄等寬並排 |
+  | **rows** | `tile 1 N`（`@workdesk-rows-count`，預設 3） | N 列等高堆疊、全寬 |
+  | **fleet** | `tile auto auto` | 依現有 pane 數自動 tiled——「監看多格」用 |
+  | **lead** | `main v 50` | 左邊一格 50% 寬的主格 + 右邊堆疊其餘 pane——agent 團隊的主力版面 |
+  | **l3** / **Left │ 3-stack** | `main v 50 4` | 左半邊全高一格 + 右半邊三格堆疊 |
+  | **mainh** | `main h 60` | 上方 60% 高的主格 + 下方一條 terminal strip |
+  | **duo** | `tile 2 1` | 兩格等寬並排 |
+
+  `tile X Y` 在 N×1（columns）、1×N（rows）、2×2（grid，4 格）這些情況下是精準的；
+  強制指定非方形的 N×M（例如 `tile 3 2`）會退回 tmux 自己的 `tiled` 排列（接近
+  方形，非精準格數）——這是已知的 v1 限制，不是 bug。
+
+  命名版面沒涵蓋到的形狀，可以直接綁基本元件：
+
+  ```tmux
+  bind-key -T prefix X run-shell "'~/.tmux/plugins/tmux-workdesk/scripts/workdesk.sh' tile 3 1"
+  bind-key -T prefix Y run-shell "'~/.tmux/plugins/tmux-workdesk/scripts/workdesk.sh' main v 70"
+  ```
+
+  怎麼選：grid／fleet 適合等重地監看多格；**lead**（一格主力 + 右邊堆疊
+  worker）是帶 agent 團隊的首選版面；columns／rows／duo／mainh 則是常見的
+  等分排法。
+- **Focus**——一個鍵把目前 active pane 放大（再按一次還原），是上面版面的
+  「監看多格、聚焦一格」互補動作。
+- **Cycle**（選用）——一個鍵讓目前視窗依序跳到 `@workdesk-cycle-ring`（預設
+  `grid columns rows`）指定的下一個版面，如果你比較想要「換下一個版面」而不是
+  每個版面各自一個鍵。
+
+**幾何版面**（grid / columns / rows / fleet / lead / l3 / mainh / duo）作用在
+**目前**視窗上：它們會先加入純 shell 的 pane，直到數量夠了，再套用排列。過程中
+不會殺掉任何 pane，所以同一批 pane 連同內容都會留著——幾何版面之間切換是無縫
+的。IDE 版面不一樣：它會開一個專屬視窗，不屬於那個切換循環。
 
 另外還有一個列出所有版面的彈出式選單——它是**選用**的（需要 tmux 3.0+），不是
 預設的操作入口；細節見下面的〈選項〉。
@@ -42,6 +72,9 @@ tmux-workdesk 給你**每個有名字的版面各自一個 prefix 鍵**，套用
                                                           |        |   R3   |
                                                           +--------+--------+
 ```
+
+（rows、fleet、lead、mainh、duo 都是上面同一組 `tile`／`main` 形狀——細節見
+上方版面表。）
 
 ## IDE 版面——自己帶工具進來
 
@@ -120,12 +153,13 @@ tmux source ~/.tmux.conf
    一次，會直接跳回那個視窗——不會重建。
 3. 按 **`prefix + g`** → 目前視窗排成 2×2 grid。
 
-Columns、left │ 3-stack、cycle、彈出式選單預設都沒有綁鍵——自己挑一個空鍵綁
-（見下面〈選項〉）：
+其他版面——columns、rows、l3、lead、mainh、duo、fleet、focus、cycle、彈出式
+選單——預設都沒有綁鍵；自己挑喜歡的空鍵綁（見下面〈選項〉）：
 
 ```tmux
 set -g @workdesk-columns-bind 'e'
 set -g @workdesk-l3-bind      'a'
+set -g @workdesk-lead-bind    'd'
 set -g @workdesk-cycle-bind   'b'
 ```
 
@@ -147,10 +181,18 @@ set -g @workdesk-cycle-bind   'b'
 | `@workdesk-ide-bind` | `i` | 開啟／切回 IDE 版面的按鍵（接在 prefix 之後）。設成 `none` 可停用。**會覆蓋 tmux 內建的 `display-message` 按鍵。** |
 | `@workdesk-grid-bind` | `g` | 把目前視窗排成 2×2 grid 的按鍵。設成 `none` 可停用。 |
 | `@workdesk-columns-bind` | `none` | 把目前視窗排成 **Columns** 的按鍵。預設不綁——它天然的助記鍵 `c` 是 tmux 自己的 `new-window`；自己挑一個空鍵。 |
+| `@workdesk-rows-bind` | `none` | 把目前視窗排成 **Rows** 的按鍵。預設不綁——自己挑一個空鍵。 |
 | `@workdesk-l3-bind` | `none` | 把目前視窗排成 **Left │ 3-stack** 的按鍵。預設不綁——助記鍵 `l` 是 tmux 自己的 `last-window`；自己挑一個空鍵。 |
-| `@workdesk-cycle-bind` | `none` | 選用的按鍵，讓目前視窗依序跳到下一個幾何版面（grid → columns → l3 → grid），取代每個版面各自一個鍵。 |
+| `@workdesk-lead-bind` | `none` | 把目前視窗排成 **Lead + stack**（50% 寬主格 + 右邊堆疊 worker）的按鍵。預設不綁——自己挑一個空鍵。 |
+| `@workdesk-mainh-bind` | `none` | 把目前視窗排成 **Main + terminal**（60% 高主格 + 下方一條 strip）的按鍵。預設不綁——自己挑一個空鍵。 |
+| `@workdesk-duo-bind` | `none` | 把目前視窗排成 **Duo**（兩格等寬並排）的按鍵。預設不綁——自己挑一個空鍵。 |
+| `@workdesk-fleet-bind` | `none` | 把目前視窗排成 **Fleet**（依現有 pane 數自動 tiled）的按鍵。預設不綁——自己挑一個空鍵。 |
+| `@workdesk-focus-bind` | `none` | 把目前 active pane 放大／還原的按鍵。預設不綁——自己挑一個空鍵。 |
+| `@workdesk-cycle-bind` | `none` | 選用的按鍵，讓目前視窗依序跳到 `@workdesk-cycle-ring` 指定的下一個版面，取代每個版面各自一個鍵。 |
 | `@workdesk-menu-bind` | `none` | 選用的按鍵，開啟列出所有版面的彈出式 `display-menu`。**需要 tmux 3.0+**——預設不綁，讓外掛的核心路徑維持在 tmux 2.4 的底線上。 |
 | `@workdesk-columns-count` | `4` | **Columns** 版面產生的欄數（限制在 2–8）。 |
+| `@workdesk-rows-count` | `3` | **Rows** 版面產生的列數（限制在 2–8）。 |
+| `@workdesk-cycle-ring` | `grid columns rows` | 空白分隔的版面名稱清單，`cycle` 依序在裡面跳（會繞回開頭；不認得的名稱會被跳過）。 |
 | `@workdesk-window-name` | `ide` | IDE 版面視窗的名字。toggle 靠這個名字找它。 |
 | `@workdesk-cwd` | *(觸發 pane 的路徑)* | IDE 版面以哪個目錄為根。預設是你按鍵時所在的位置。 |
 | `@workdesk-main-cmd` | *(空 → shell)* | IDE 主工作區的指令。留空是純 shell。 |
@@ -216,7 +258,7 @@ rm -rf ~/.tmux/plugins/tmux-workdesk
 它是選用的——把 `@workdesk-menu-bind` 設成一個空鍵即可（需要 tmux 3.0+）。
 預設沒有選單，每個版面各自有自己的鍵。
 
-**grid/columns/left-stack 版面加了空的 shell pane。**
+**某個幾何版面（grid/columns/rows/…）加了空的 shell pane。**
 這是設計如此——這些幾何版面會先加入純 shell 的 pane，直到數量夠了，再套用
 排列。新 pane 裡想跑什麼都行。
 
