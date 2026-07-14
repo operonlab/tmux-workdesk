@@ -1,12 +1,13 @@
-# tmux-workdesk demo — one keypress turns the current project into an IDE
-# window; pressing it again from anywhere jumps back without rebuilding.
+# tmux-workdesk demo — one key opens a menu of layouts; pick one and the window
+# rearranges. Shows the switcher: prefix+i -> menu -> "l" (left | 3-stack) ->
+# prefix+i -> menu -> "i" (the IDE layout, slots opted into example tools).
 # Fully self-contained: docs/demo-setup.sh stages an anonymous sample project,
-# a cockpit-style themed ISOLATED tmux server (socket wd-demo), and a harmless
-# AI-slot stand-in.
+# a cockpit-style themed ISOLATED tmux server (socket wd-demo), and harmless
+# tool stand-ins.
 #
 # Re-record from the repo root with:
 #   vhs docs/demo.tape && bash docs/demo-overlay.sh
-# The overlay pass composites KeyCastr-style key bezels (docs/assets/) onto
+# The overlay pass composites the KeyCastr-style key bezels (docs/assets/) onto
 # the raw capture at the timestamps below — keep the Sleeps in sync with the
 # windows in docs/demo-overlay.sh (timeline starts at Show).
 Output "docs/demo-raw.gif"
@@ -29,33 +30,28 @@ Enter
 Sleep 1500ms
 Show
 
-# t=0.0  cockpit dwell — bezel "⌃B" fades in at 0.90
+# t=0.0  cockpit dwell
 Sleep 1600ms
 
-# t=1.6  prefix + i -> the IDE window (bezel switches to "⌃B I" at 2.15)
+# t=1.6  prefix + i -> the layout menu (bezel "⌃B" 1.70, "⌃B I" 2.15)
 Ctrl+B
 Sleep 500ms
 Type "i"
-Sleep 4400ms
+Sleep 3600ms
 
-# t=6.5  jump away: prefix + 0 (bezel "⌃B" 5.90, then "⌃B 0" 6.95)
+# t=5.7  pick "l" -> left | 3-stack rearranges the current window
+Type "l"
+Sleep 3000ms
+
+# t=8.8  prefix + i again -> menu (bezel "⌃B" 8.85, "⌃B I" 9.30)
 Ctrl+B
-Sleep 400ms
-Type "0"
-Sleep 1400ms
-
-# t=8.4  caption in the plain shell
-Type "# press  prefix + i  again from anywhere -> jumps back, never rebuilds"
-Sleep 1200ms
-
-# t=12.0  ... and back: the toggle never rebuilds (bezel 11.40 / 12.45)
-Ctrl+B
-Sleep 400ms
+Sleep 500ms
 Type "i"
-Sleep 2200ms
+Sleep 3400ms
 
-# hold the money shot: lazygit third | yazi over the agent
-Sleep 3500ms
+# t=12.7  pick "i" -> the IDE layout window (git · files/agent), example tools
+Type "i"
+Sleep 5s
 
 Hide
 Ctrl+B
