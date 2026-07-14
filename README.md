@@ -2,33 +2,42 @@
 
 > 中文說明請見 [docs/zh.md](docs/zh.md)
 
-A **pane-layout switcher** for tmux. Press one key to open a small menu and pick
-a layout for your window — a 2×2 grid, even columns, a big-left-plus-stacked-right
-split, or an IDE-style four-slot shape. The layouts are the point; you decide
-what runs in the panes.
+A **pane-layout switcher** for tmux. Each layout gets its own prefix key — press
+it and your window rearranges into that layout. No menu to navigate by default;
+just `prefix + i` for the IDE layout, `prefix + g` for a 2×2 grid, and so on. The
+layouts are the point; you decide what runs in the panes.
 
-![the tmux-workdesk layout menu — IDE layout, 2×2 grid, Columns, Left | 3-stack](docs/screenshot.png)
+![tmux-workdesk's layouts — IDE layout, 2×2 grid, Columns, Left | 3-stack](docs/screenshot.png)
 
-*One `prefix + i` opens the chooser; pick a layout and the current window rearranges into it.*
+*Each layout is one prefix key away: `prefix + i` opens the IDE layout, `prefix + g` rearranges the current window into a 2×2 grid.*
 
 ## What is this?
 
 tmux can already cycle its built-in layouts with `prefix + Space`, but those are
-generic and unnamed. tmux-workdesk gives you a **named menu of the layouts you
-actually reach for**, on one keypress, applied to the current window:
+generic and unnamed. tmux-workdesk gives you **one prefix key per named layout**,
+applied to the current window (or, for the IDE layout, a dedicated window):
 
 - **IDE layout** — a four-slot shape: a narrow left sidebar, a main workspace,
   a strip beneath it, and a right column. Built as **plain shells by default** —
   point the slots at your own tools if you want (see below). Opens as a dedicated
-  `ide` window you can toggle back to.
+  `ide` window you toggle back to; it is a standalone workspace, not one of the
+  geometry layouts below.
 - **2×2 grid** — four equal panes, tiled.
 - **Columns** — N even side-by-side columns (default 4).
 - **Left │ 3-stack** — the left half is one full-height pane; the right half is
   split into three stacked panes.
+- **Cycle** *(optional)* — steps the current window through the geometry ring
+  (grid → columns → l3 → grid) on one key, if you'd rather have "next layout"
+  than a separate key per layout.
 
-The geometry layouts work on your **current** window: they add plain-shell panes
-until the layout has enough, then arrange them. They never kill panes, so you can
-switch between layouts freely.
+The **geometry layouts** (grid, columns, left │ 3-stack) work on your **current**
+window: they add plain-shell panes until the layout has enough, then arrange
+them. They never kill panes, so the same panes and their content carry over —
+switching between geometry layouts is seamless. The IDE layout is different: it
+opens its own dedicated window and isn't part of that switching ring.
+
+A pop-up chooser menu also exists, listing every layout — it's **opt-in** (needs
+tmux 3.0+) rather than the default entry point; see [Options](#options) below.
 
 ```
    IDE layout            2×2 grid           Columns          Left │ 3-stack
@@ -116,23 +125,29 @@ that's fine, the setting just takes effect next time you start tmux.)
 ### Try it
 
 1. `cd` into a project and start (or attach to) tmux.
-2. Press **`prefix + i`** (lowercase i) → the layout menu opens.
-3. Pick a layout by its highlighted key:
-   - **`i`** — the IDE layout (a new `ide` window; press `prefix + i` then `i`
-     again from anywhere to jump back to it — it is not rebuilt),
-   - **`g`** — 2×2 grid, **`c`** — columns, **`l`** — left │ 3-stack (these
-     rearrange the current window).
+2. Press **`prefix + i`** → the IDE layout opens as a new `ide` window. Press
+   it again from anywhere to jump straight back to that window — it is not
+   rebuilt.
+3. Press **`prefix + g`** → the current window rearranges into a 2×2 grid.
 
-> **Prefer one key straight to the IDE layout?** Set `@workdesk-menu 'off'` and
-> `prefix + i` skips the menu and toggles the IDE layout directly (the pre-menu
-> behaviour).
->
-> **Heads up:** by default `prefix + i` **overrides tmux's built-in binding**
-> (a window-information message). Rebind with `@workdesk-bind` if you rely on it.
+Columns, left │ 3-stack, cycle, and the pop-up menu have no default key — bind
+one yourself (see [Options](#options)):
+
+```tmux
+set -g @workdesk-columns-bind 'e'
+set -g @workdesk-l3-bind      'a'
+set -g @workdesk-cycle-bind   'b'
+```
+
+> **Heads up:** by default `prefix + i` **overrides tmux's built-in
+> `display-message` binding** (a one-line pane-info message). `prefix + g`
+> doesn't clobber anything — tmux has no default binding there. Set
+> `@workdesk-ide-bind` to `none` or another key if you rely on the built-in
+> message.
 
 ## Demo
 
-![tmux-workdesk demo — prefix + i opens the layout menu; picking a layout rearranges the window](docs/demo.gif)
+![tmux-workdesk demo — prefix + i opens the IDE layout; prefix + g rearranges the window into a 2×2 grid](docs/demo.gif)
 
 ## Options
 
@@ -141,8 +156,12 @@ line. All are optional.
 
 | Option | Default | What it does (plain words) |
 |---|---|---|
-| `@workdesk-bind` | `i` | The key (after your prefix) that opens the layout menu. Set to `none` to disable the binding. **Overrides the built-in `prefix + i`.** |
-| `@workdesk-menu` | `on` | `on` = the key opens the layout menu. `off` = the key toggles the IDE layout directly, no menu. |
+| `@workdesk-ide-bind` | `i` | The key (after your prefix) that opens/returns to the IDE layout. Set to `none` to disable. **Overrides tmux's built-in `display-message` binding.** |
+| `@workdesk-grid-bind` | `g` | The key that rearranges the current window into a 2×2 grid. Set to `none` to disable. |
+| `@workdesk-columns-bind` | `none` | The key that rearranges the current window into **Columns**. Off by default — its natural mnemonic `c` is tmux's own `new-window`; pick a free key. |
+| `@workdesk-l3-bind` | `none` | The key that rearranges the current window into **Left │ 3-stack**. Off by default — its mnemonic `l` is tmux's own `last-window`; pick a free key. |
+| `@workdesk-cycle-bind` | `none` | Optional key that steps the current window through the geometry ring (grid → columns → l3 → grid), instead of a separate key per layout. |
+| `@workdesk-menu-bind` | `none` | Optional key that opens a pop-up `display-menu` listing every layout. **Needs tmux 3.0+** — off by default so the plugin's core path stays on the tmux 2.4 floor. |
 | `@workdesk-columns-count` | `4` | Number of columns the **Columns** layout produces (clamped 2–8). |
 | `@workdesk-window-name` | `ide` | The name of the IDE-layout window. The toggle finds it by this name. |
 | `@workdesk-cwd` | *(triggering pane's path)* | The directory the IDE layout is rooted at. Defaults to wherever you pressed the key. |
@@ -187,8 +206,8 @@ set -g @plugin 'operonlab/tmux-workdesk'
 
 ## Uninstall
 
-Run the bundled teardown script to unbind the key and close the IDE window, then
-delete the folder:
+Run the bundled teardown script to unbind the layout keys and close the IDE
+window, then delete the folder:
 
 ```sh
 ~/.tmux/plugins/tmux-workdesk/scripts/teardown.sh
@@ -204,9 +223,14 @@ from `~/.tmux.conf`.)
 ## Troubleshooting / FAQ
 
 **I pressed `prefix + i` and it just showed a window-info message.**
-That's tmux's built-in `prefix + i` — the plugin's binding isn't loaded yet.
-Reload your config (`tmux source ~/.tmux.conf`), and if you use TPM, install with
-`prefix + I` (capital i). Once tmux-workdesk is loaded, `prefix + i` opens the menu.
+That's tmux's built-in `prefix + i` (`display-message`) — the plugin's binding
+isn't loaded yet. Reload your config (`tmux source ~/.tmux.conf`), and if you
+use TPM, install with `prefix + I` (capital i). Once tmux-workdesk is loaded,
+`prefix + i` opens the IDE layout instead.
+
+**I want the pop-up layout menu.**
+It's opt-in — set `@workdesk-menu-bind` to a free key (needs tmux 3.0+). By
+default there's no menu; each layout has its own key instead.
 
 **A grid/columns/left-stack layout added empty shell panes.**
 That's by design — the geometry layouts add plain-shell panes until the layout
@@ -237,7 +261,8 @@ borders). That's expected.
 The windows and panes live in the running server like any other, so a
 [tmux-resurrect](https://github.com/tmux-plugins/tmux-resurrect) setup can bring
 them back — but tmux-workdesk itself keeps no state on disk. After a plain restart,
-just press `prefix + i` and pick the layout again.
+just press the layout's key again (`prefix + i` for IDE, `prefix + g` for grid,
+and so on).
 
 ## Roadmap
 
