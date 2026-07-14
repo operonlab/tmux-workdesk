@@ -23,11 +23,32 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   never killed, so the same panes reflow in place and switching between
   layouts is seamless.
 - **Cycle** (`@workdesk-cycle-bind`, default `none`): steps the current
-  window through the geometry ring (grid → columns → l3 → grid) on one
-  key, for "next layout" instead of a separate key per layout.
+  window through a ring of layouts on one key, for "next layout" instead
+  of a separate key per layout. The ring is configurable via
+  `@workdesk-cycle-ring` (default `grid columns rows`).
 - **Menu** (`@workdesk-menu-bind`, default `none`): opt-in `display-menu`
   popup listing every layout. Needs tmux 3.0+ — off by default so the
   plugin's core path stays on the tmux 2.4 floor.
+- **Geometry layouts consolidated onto two parameterized primitives**:
+  `tile X Y` (an X-by-Y tile of panes; `auto` on either axis adaptive-tiles
+  over the current panes) and `main {v|h} <pct> [n]` (one pane at `<pct>`%
+  of the window — `v` = left column, `h` = top row — the rest stacked
+  beside/below; `n` forces the pane count). Both are bindable directly
+  (`workdesk.sh tile 3 1`, `workdesk.sh main v 70`) for shapes the named
+  presets don't cover. `tile X Y` is exact for N×1, 1×N, and 2×2; a forced
+  non-square N×M falls back to tmux's own `tiled` arrangement.
+- **Five new named presets** on top of the primitives: **rows** (`tile 1 N`,
+  count via new option `@workdesk-rows-count`, default 3, clamped 2–8),
+  **fleet** (`tile auto auto`, adaptive tiled grid — "watch many"), **lead**
+  (`main v 50`, a 50%-wide lead pane + stacked workers — the dominant-agent
+  layout), **mainh** (`main h 60`, a 60%-tall main pane over a terminal
+  strip), and **duo** (`tile 2 1`, two equal panes side by side). Matching
+  bind options: `@workdesk-rows-bind`, `@workdesk-fleet-bind`,
+  `@workdesk-lead-bind`, `@workdesk-mainh-bind`, `@workdesk-duo-bind`
+  (all default `none`).
+- **Focus** (`@workdesk-focus-bind`, default `none`): zooms the active pane
+  (press again to restore) — the "watch many, focus one" complement to the
+  geometry layouts.
 
 ### Changed
 
