@@ -212,10 +212,93 @@ workdesk_toggle() {
 	tmux select-pane -t "$MAIN" 2>/dev/null || true
 }
 
-case "${1:-toggle}" in
-toggle) workdesk_toggle ;;
+# ─────────────────────────── geometry presets ───────────────────────────
+# Pure pane-level layouts for the CURRENT window: reach a target pane count by
+# splitting empty shells off the current panes, then apply a native tmux
+# layout. Non-destructive — panes are only ever ADDED, never killed, so a
+# preset can be re-applied or switched to freely.
+
+# ensure_panes <n> — add empty shells (inheriting the pane's cwd) until the
+# current window holds at least <n> panes. Re-tile between splits so there is
+# always room for the next one; the caller applies the final layout afterwards.
+ensure_panes() {
+	target="$1"
+	guard=0
+	while :; do
+		n=$(tmux list-panes 2>/dev/null | wc -l | tr -d ' ')
+		[ "${n:-0}" -ge "$target" ] && break
+		guard=$((guard + 1))
+		[ "$guard" -gt 16 ] && break
+		tmux split-window -d -c '#{pane_current_path}' >/dev/null 2>&1 || break
+		tmux select-layout tiled >/dev/null 2>&1 || true
+	done
+}
+
+# columns_count — read @workdesk-columns-count, clamp to 2-8, default 4.
+columns_count() {
+	raw=$(get_tmux_option "@workdesk-columns-count" "4")
+	n="${raw//[!0-9]/}"
+	n="${n:-4}"
+	n=$((10#$n))
+	[ "$n" -lt 2 ] && n=2
+	[ "$n" -gt 8 ] && n=8
+	printf '%s' "$n"
+}
+
+focus_first() {
+	first=$(tmux list-panes -F '#{pane_id}' 2>/dev/null | head -1)
+	[ -n "$first" ] && tmux select-pane -t "$first" 2>/dev/null || true
+}
+
+# grid — 2x2 tiled square (4 panes).
+layout_grid() {
+	ensure_panes 4
+	tmux select-layout tiled >/dev/null 2>&1 || true
+	focus_first
+}
+
+# columns — N side-by-side columns (@workdesk-columns-count, default 4).
+layout_columns() {
+	n=$(columns_count)
+	ensure_panes "$n"
+	tmux select-layout even-horizontal >/dev/null 2>&1 || true
+	focus_first
+}
+
+# l3 — left half (50% width, full height) + right half split into 3 stacked
+# panes (~33% each). main-vertical with main-pane-width pinned to half the
+# window is exactly this shape; the right column auto-divides among the rest.
+layout_l3() {
+	ensure_panes 4
+	WW=$(num_or "$(tmux display-message -p '#{window_width}' 2>/dev/null)" 0)
+	if [ "$WW" -ge 4 ]; then
+		tmux set-window-option main-pane-width "$((WW / 2))" 2>/dev/null || true
+	fi
+	tmux select-layout main-vertical >/dev/null 2>&1 || true
+	focus_first
+}
+
+# menu — the layout chooser (also installed as the prefix binding).
+layout_menu() {
+	self="${CURRENT_DIR}/workdesk.sh"
+	tmux display-menu -T '#[align=centre]#[fg=#fab387] workdesk ' -x C -y C \
+		'IDE scaffold'    i "run-shell \"'${self}' ide\"" \
+		'' \
+		'2×2 grid'        g "run-shell \"'${self}' grid\"" \
+		'Columns'         c "run-shell \"'${self}' columns\"" \
+		'Left │ 3-stack'  l "run-shell \"'${self}' l3\"" \
+		'' \
+		'Cancel'          q '' 2>/dev/null || true
+}
+
+case "${1:-menu}" in
+toggle | ide) workdesk_toggle ;;
+grid) layout_grid ;;
+columns | cols) layout_columns ;;
+l3) layout_l3 ;;
+menu) layout_menu ;;
 *)
-	echo "usage: workdesk.sh {toggle}" >&2
+	echo "usage: workdesk.sh {menu|ide|grid|columns|l3}" >&2
 	exit 1
 	;;
 esac
