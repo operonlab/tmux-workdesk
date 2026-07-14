@@ -6,11 +6,12 @@
 # `run-shell`, so the bare `tmux` calls inside them inherit the same private
 # socket through $TMUX — no PATH shim needed here.
 #
-# These tests assert layout structure, not that the tools launched — so every
-# scenario pins the slot commands to a plain `sh` (see inert_slots). On a dev
-# machine the real defaults (yazi / claude / lazygit) ARE installed, and a
-# leaked or slow slot pane becomes a live AI agent that pollutes the host's
-# agent observability; smoke runs must never start one.
+# These tests assert layout structure, not that any tool launched. The IDE
+# layout ships plain shells by default, but a dev may have set @workdesk-*-cmd
+# to real tools globally in their config — a leaked slot pane could then become
+# a live AI agent that pollutes the host's agent observability. So every
+# scenario pins the slot commands to a plain `sh` (see inert_slots); smoke runs
+# must never start a real tool.
 
 set -u
 
@@ -79,43 +80,44 @@ count=$(panes_of "$A" work:ide | grep -c .)
 check "pane count (four slots built)" "4" "$count"
 
 geom=$(panes_of "$A" work:ide)
-# yazi = the leftmost pane (left == 0): full height, 20% of 200 = 40 wide.
-yazi_w=$(printf '%s\n' "$geom" | awk '$1==0{print $3; exit}')
-yazi_h=$(printf '%s\n' "$geom" | awk '$1==0{print $4; exit}')
-check "yazi left pane width (20% of 200)" "40" "$yazi_w"
-check "yazi left pane is full height" "50" "$yazi_h"
-# agent = the rightmost pane (max left). 30% of 200 = 60 wide, full height, left=140.
-agent_left=$(printf '%s\n' "$geom" | awk '{if($1>m)m=$1}END{print m}')
-agent_w=$(printf '%s\n' "$geom" | awk -v m="$agent_left" '$1==m{print $3; exit}')
-agent_h=$(printf '%s\n' "$geom" | awk -v m="$agent_left" '$1==m{print $4; exit}')
-check "agent right pane left offset" "140" "$agent_left"
-check "agent right pane width (30% of 200)" "60" "$agent_w"
-check "agent right pane is full height" "50" "$agent_h"
-# lazygit = the one pane with top != 0 (the central bottom): 30% of 50 = 15 tall.
+# left slot = the leftmost pane (left == 0): full height, 20% of 200 = 40 wide.
+left_w=$(printf '%s\n' "$geom" | awk '$1==0{print $3; exit}')
+left_h=$(printf '%s\n' "$geom" | awk '$1==0{print $4; exit}')
+check "left slot pane width (20% of 200)" "40" "$left_w"
+check "left slot pane is full height" "50" "$left_h"
+# right slot = the rightmost pane (max left). 30% of 200 = 60 wide, full height, left=140.
+right_left=$(printf '%s\n' "$geom" | awk '{if($1>m)m=$1}END{print m}')
+right_w=$(printf '%s\n' "$geom" | awk -v m="$right_left" '$1==m{print $3; exit}')
+right_h=$(printf '%s\n' "$geom" | awk -v m="$right_left" '$1==m{print $4; exit}')
+check "right slot pane left offset" "140" "$right_left"
+check "right slot pane width (30% of 200)" "60" "$right_w"
+check "right slot pane is full height" "50" "$right_h"
+# bottom slot = the one pane with top != 0 (the central bottom): 30% of 50 = 15 tall.
 bottom_count=$(printf '%s\n' "$geom" | awk '$2!=0{c++}END{print c+0}')
-lg_h=$(printf '%s\n' "$geom" | awk '$2!=0{print $4; exit}')
-lg_left=$(printf '%s\n' "$geom" | awk '$2!=0{print $1; exit}')
-check "exactly one bottom pane (lazygit)" "1" "$bottom_count"
-check "lazygit height (30% of 50)" "15" "$lg_h"
-check "lazygit sits in the central column (left=41)" "41" "$lg_left"
+bottom_h=$(printf '%s\n' "$geom" | awk '$2!=0{print $4; exit}')
+bottom_left=$(printf '%s\n' "$geom" | awk '$2!=0{print $1; exit}')
+check "exactly one bottom slot pane" "1" "$bottom_count"
+check "bottom slot height (30% of 50)" "15" "$bottom_h"
+check "bottom slot sits in the central column (left=41)" "41" "$bottom_left"
 # focus must land on the main pane: central column, top row (left=41, top=0).
 active_left=$(printf '%s\n' "$geom" | awk '$5==1{print $1; exit}')
 active_top=$(printf '%s\n' "$geom" | awk '$5==1{print $2; exit}')
 check "focus on main pane — left offset" "41" "$active_left"
 check "focus on main pane — top row" "0" "$active_top"
 
-# ═════════════════ Scenario B: @workdesk-right-cmd empty → slot skipped, 3 panes ═════════════════
-echo "── Scenario B: empty @workdesk-right-cmd → agent slot skipped (3 panes)"
+# ═════════════════ Scenario B: @workdesk-right-cmd "none" → slot dropped, 3 panes ═════════════════
+echo "── Scenario B: @workdesk-right-cmd 'none' → right slot dropped (3 panes)"
 new_sock B; B=$SOCK
 tmux -L "$B" -f /dev/null new-session -d -s work -x 200 -y 50
 inert_slots "$B"
-tmux -L "$B" set-option -g @workdesk-right-cmd ""
+# "none" drops the slot; an empty string would instead build a plain shell.
+tmux -L "$B" set-option -g @workdesk-right-cmd "none"
 tmux -L "$B" run-shell "'${IDE}' toggle"
 sleep 0.3
-check "pane count with agent slot empty" "3" "$(panes_of "$B" work:ide | grep -c .)"
-# with no agent slot the neighbour keeps the space: rightmost edge reaches 199.
+check "pane count with right slot dropped" "3" "$(panes_of "$B" work:ide | grep -c .)"
+# with no right slot the neighbour keeps the space: rightmost edge reaches 199.
 right_edge=$(panes_of "$B" work:ide | awk '{e=$1+$3-1; if(e>m)m=e}END{print m}')
-check "no agent gap — layout reaches window right edge" "199" "$right_edge"
+check "no gap — layout reaches window right edge" "199" "$right_edge"
 
 # ═════════════════ Scenario C: missing program → fallback shell, pane still built ═════════════════
 echo "── Scenario C: missing slot program → pane opens as a shell (still 4 panes)"
@@ -177,16 +179,109 @@ tmux -L "$F" -f /dev/null new-session -d -s work -x 200 -y 50
 inert_slots "$F"
 tmux -L "$F" run-shell "'${REPO_DIR}/workdesk.tmux'"
 sleep 0.2
-bound=$(tmux -L "$F" list-keys -T prefix 2>/dev/null | grep -c 'workdesk.sh.*toggle')
-check "prefix key bound after workdesk.tmux" "1" "$bound"
+# the entrypoint binds one prefix key per layout; defaults bind i (ide) + g
+# (grid), so two workdesk binds are installed.
+bound=$(tmux -L "$F" list-keys -T prefix 2>/dev/null | grep -c 'workdesk.sh')
+check "layout keys bound after workdesk.tmux (i + g)" "2" "$bound"
 # build a window, then tear down
 tmux -L "$F" run-shell "'${IDE}' toggle"
 sleep 0.3
 check "ide window present before teardown" "1" "$(tmux -L "$F" list-windows -t work -F '#{window_name}' | grep -cx 'ide')"
 tmux -L "$F" run-shell "'${REPO_DIR}/scripts/teardown.sh'"
 sleep 0.2
-check "prefix key unbound after teardown" "0" "$(tmux -L "$F" list-keys -T prefix 2>/dev/null | grep -c 'workdesk.sh.*toggle')"
+check "prefix key unbound after teardown" "0" "$(tmux -L "$F" list-keys -T prefix 2>/dev/null | grep -c 'workdesk.sh')"
 check "ide window killed after teardown" "0" "$(tmux -L "$F" list-windows -t work -F '#{window_name}' | grep -cx 'ide')"
+
+# ═════════════════ Scenario G: geometry presets rearrange the current window ═════════════════
+echo "── Scenario G: geometry presets (grid → 4 tiled; l3 → left 50% + right 3-stack)"
+new_sock G; G=$SOCK
+tmux -L "$G" -f /dev/null new-session -d -s work -x 200 -y 50
+# grid on the current single-pane window → 4 panes
+tmux -L "$G" run-shell "'${IDE}' grid"
+sleep 0.3
+check "grid builds 4 panes in the current window" "4" "$(tmux -L "$G" list-panes -t work:0 | grep -c .)"
+# l3 in a fresh window → left 50% + 3 stacked right
+tmux -L "$G" new-window -t work:1
+tmux -L "$G" select-window -t work:1
+tmux -L "$G" run-shell "'${IDE}' l3"
+sleep 0.3
+check "l3 builds 4 panes" "4" "$(tmux -L "$G" list-panes -t work:1 | grep -c .)"
+l3geom=$(tmux -L "$G" list-panes -t work:1 -F '#{pane_left} #{pane_width} #{pane_height}')
+# left pane: left==0, 50% of 200 = 100 wide, full height 50.
+l3_left_w=$(printf '%s\n' "$l3geom" | awk '$1==0{print $2; exit}')
+l3_left_h=$(printf '%s\n' "$l3geom" | awk '$1==0{print $3; exit}')
+check "l3 left pane width (50% of 200)" "100" "$l3_left_w"
+check "l3 left pane is full height" "50" "$l3_left_h"
+# three stacked panes on the right (left != 0).
+l3_right_count=$(printf '%s\n' "$l3geom" | awk '$1!=0{c++}END{print c+0}')
+check "l3 has 3 stacked right panes" "3" "$l3_right_count"
+
+# cycle steps the ring grid -> columns -> l3 -> grid; a fresh window starts at
+# the head (grid). Reuse work:1 (currently l3) and step it forward.
+tmux -L "$G" run-shell "'${IDE}' cycle"
+sleep 0.3
+check "cycle after l3 wraps to grid" "grid" "$(tmux -L "$G" show-option -t work:1 -wqv @workdesk-layout)"
+tmux -L "$G" run-shell "'${IDE}' cycle"
+sleep 0.3
+check "cycle steps grid -> columns" "columns" "$(tmux -L "$G" show-option -t work:1 -wqv @workdesk-layout)"
+
+# ═════════════════ Scenario H: rows → 3 stacked, full-width panes ═════════════════
+echo "── Scenario H: rows (3 stacked full-width panes)"
+new_sock H; H=$SOCK
+tmux -L "$H" -f /dev/null new-session -d -s work -x 200 -y 50
+tmux -L "$H" run-shell "'${IDE}' rows"
+sleep 0.3
+hgeom=$(panes_of "$H" work:0)
+check "rows builds 3 panes" "3" "$(printf '%s\n' "$hgeom" | grep -c .)"
+non_full_w=$(printf '%s\n' "$hgeom" | awk '$3!=200{c++}END{print c+0}')
+check "rows panes are all full width (200)" "0" "$non_full_w"
+rows_stacked=$(printf '%s\n' "$hgeom" | awk '{print $2}' | sort -u | wc -l | tr -d ' ')
+check "rows panes stack at 3 distinct rows" "3" "$rows_stacked"
+
+# ═════════════════ Scenario I: duo → exactly 2 panes ═════════════════
+echo "── Scenario I: duo (exactly 2 panes)"
+new_sock I; I=$SOCK
+tmux -L "$I" -f /dev/null new-session -d -s work -x 200 -y 50
+tmux -L "$I" run-shell "'${IDE}' duo"
+sleep 0.3
+check "duo builds exactly 2 panes" "2" "$(panes_of "$I" work:0 | grep -c .)"
+
+# ═════════════════ Scenario J: lead → main-vertical with a wide left pane ═════════════════
+echo "── Scenario J: lead (main-vertical, wide left pane)"
+new_sock J; J=$SOCK
+tmux -L "$J" -f /dev/null new-session -d -s work -x 200 -y 50
+tmux -L "$J" run-shell "'${IDE}' lead"
+sleep 0.3
+jgeom=$(panes_of "$J" work:0)
+check "lead builds 2 panes" "2" "$(printf '%s\n' "$jgeom" | grep -c .)"
+lead_w=$(printf '%s\n' "$jgeom" | awk '$1==0{print $3; exit}')
+check "lead pane width (50% of 200)" "100" "$lead_w"
+
+# ═════════════════ Scenario K: focus toggles window_zoomed_flag ═════════════════
+echo "── Scenario K: focus toggles window_zoomed_flag"
+new_sock K; K=$SOCK
+tmux -L "$K" -f /dev/null new-session -d -s work -x 200 -y 50
+tmux -L "$K" run-shell "'${IDE}' duo"
+sleep 0.3
+tmux -L "$K" run-shell "'${IDE}' focus"
+sleep 0.2
+check "focus zooms the active pane" "1" "$(tmux -L "$K" display-message -t work:0 -p '#{window_zoomed_flag}')"
+tmux -L "$K" run-shell "'${IDE}' focus"
+sleep 0.2
+check "focus again restores (un-zooms)" "0" "$(tmux -L "$K" display-message -t work:0 -p '#{window_zoomed_flag}')"
+
+# ═════════════════ Scenario L: tile 3 1 → 3 even columns ═════════════════
+echo "── Scenario L: tile 3 1 (3 even columns)"
+new_sock L; L=$SOCK
+tmux -L "$L" -f /dev/null new-session -d -s work -x 200 -y 50
+tmux -L "$L" run-shell "'${IDE}' tile 3 1"
+sleep 0.3
+lgeom=$(panes_of "$L" work:0)
+check "tile 3 1 builds 3 panes" "3" "$(printf '%s\n' "$lgeom" | grep -c .)"
+non_full_h=$(printf '%s\n' "$lgeom" | awk '$4!=50{c++}END{print c+0}')
+check "tile 3 1 panes are all full height (50)" "0" "$non_full_h"
+distinct_left=$(printf '%s\n' "$lgeom" | awk '{print $1}' | sort -u | wc -l | tr -d ' ')
+check "tile 3 1 panes sit at 3 distinct columns" "3" "$distinct_left"
 
 echo ""
 if [ "$FAILS" -eq 0 ]; then

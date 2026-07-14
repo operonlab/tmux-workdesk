@@ -16,8 +16,8 @@ jobs:
       - name: Lint all shell files
         run: |
           shellcheck -S warning \
-            ide.tmux \
-            scripts/ide.sh \
+            workdesk.tmux \
+            scripts/workdesk.sh \
             scripts/helpers.sh \
             scripts/teardown.sh \
             test/smoke.sh

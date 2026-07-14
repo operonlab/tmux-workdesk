@@ -143,16 +143,21 @@ sleep 0.3
 "$TMUX_BIN" -L "$SOCK" set -g 'status-format[0]' "$FMT0"
 "$TMUX_BIN" -L "$SOCK" set -g 'status-format[1]' "$FMT1"
 
-# ── workdesk slots — the canonical 3-pane layout this plugin ships for:
-#    lazygit full-height on the left third; yazi over the AI agent (3/5 : 2/5)
-#    on the right two-thirds ──
+# ── EXAMPLE config for the "IDE" layout (one of the menu's layouts). The plugin
+#    ships plain shells; this demo opts each slot into a tool to show the idea:
+#    a git TUI on the left third, a file manager over an AI agent (3/5 : 2/5) on
+#    the right two-thirds. "none" drops the far-right slot. ──
 "$TMUX_BIN" -L "$SOCK" set -g @workdesk-cwd "$APP"
 "$TMUX_BIN" -L "$SOCK" set -g @workdesk-left-cmd "lazygit"
 "$TMUX_BIN" -L "$SOCK" set -g @workdesk-left-width "33"
 "$TMUX_BIN" -L "$SOCK" set -g @workdesk-main-cmd "yazi"
 "$TMUX_BIN" -L "$SOCK" set -g @workdesk-bottom-cmd "$WORK/agent-slot.sh"
 "$TMUX_BIN" -L "$SOCK" set -g @workdesk-bottom-height "40"
-"$TMUX_BIN" -L "$SOCK" set -g @workdesk-right-cmd ""
+"$TMUX_BIN" -L "$SOCK" set -g @workdesk-right-cmd "none"
+# bind the layouts the demo walks to free example keys (lead/rows have no
+# default key — this shows "bind any preset to a key you like").
+"$TMUX_BIN" -L "$SOCK" set -g @workdesk-lead-bind "a"
+"$TMUX_BIN" -L "$SOCK" set -g @workdesk-rows-bind "r"
 "$TMUX_BIN" -L "$SOCK" run-shell "$PLUGIN/workdesk.tmux"
 
 
