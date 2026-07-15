@@ -11,8 +11,8 @@ Output "docs/screenshot.png"
 Require tmux
 
 Set Shell "bash"
-Set FontFamily "Menlo, Symbols Nerd Font Mono"
-Set FontSize 18
+Set FontFamily "MesloLGS Nerd Font Mono"
+Set FontSize 20
 Set Width 2080
 Set Height 1080
 Set Padding 20
