@@ -21,8 +21,8 @@ Require tmux
 Set Shell "bash"
 Set FontFamily "MesloLGS Nerd Font Mono"
 Set FontSize 20
-Set Width 2080
-Set Height 1080
+Set Width 2496
+Set Height 1404
 Set Padding 20
 Set TypingSpeed 35ms
 
