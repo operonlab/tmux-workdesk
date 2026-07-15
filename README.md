@@ -334,6 +334,31 @@ tmux-workdesk is a **layout switcher** — the IDE shape is one of several layou
 it launches no tools of its own, and its options live under `@workdesk-*` (versus
 guysoft's `@ide-*`), so enabling both won't cross wires.
 
+<!-- family-section -->
+---
+
+## Part of the [operonlab](https://github.com/operonlab) tmux family
+
+Small, focused plugins that compose into one cockpit. Bare tmux **before**, the
+family **after**:
+
+![vanilla tmux versus the operonlab tmux cockpit](docs/family-before-after.gif)
+
+Mix and match whichever you like:
+
+| plugin | what it adds |
+|--------|--------------|
+| **tmux-workdesk** — you are here | one-key IDE + tile/main pane layouts |
+| [tmux-floatpane](https://github.com/operonlab/tmux-floatpane) | a pop-up floating scratch terminal |
+| [tmux-context-menu](https://github.com/operonlab/tmux-context-menu) | a right-click / prefix menu of pane actions |
+| [tmux-autosize](https://github.com/operonlab/tmux-autosize) | auto-resize background windows to the client |
+| [tmux-passthrough](https://github.com/operonlab/tmux-passthrough) | pass a key straight through to the inner app |
+| [tmux-sysmon](https://github.com/operonlab/tmux-sysmon) | live CPU / MEM / DISK / NET capsules |
+| [tmux-llm-usage](https://github.com/operonlab/tmux-llm-usage) | LLM quota / spend as a status capsule |
+| [tmux-agent-status](https://github.com/operonlab/tmux-agent-status) | busy / blocked / idle AI-pane capsule |
+| [tmux-pillbar](https://github.com/operonlab/tmux-pillbar) | build a second status row of custom pills |
+| [tmux-agent-resume](https://github.com/operonlab/tmux-agent-resume) | replay each AI CLI to its exact session after a crash |
+
 ## Credits / License
 
 Part of a small family of single-purpose tmux plugins. Released under the
